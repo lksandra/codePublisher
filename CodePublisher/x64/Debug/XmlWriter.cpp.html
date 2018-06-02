@@ -1,0 +1,251 @@
+<html>
+  <head>
+    <style>
+		body {
+			margin:20px; color:black; background-color:#eee;
+			font-family:Consolas; font-weight:600; font-size:110 % ;
+		}
+		.indent{ margin-left:20px; margin-right:20px; }
+		h4{ margin-bottom: 3px; margin-top:3px; }
+	</style>
+	<script type = "text/javascript">
+     function toggle_visibility(id, id2) {
+       var e = document.getElementById(id); 
+       var label = document.getElementById(id2); 
+       if (e.style.display == 'none') {
+         label.innerHTML = label.innerHTML.replace("[+] {...}", "[-]");
+         e.style.display = 'block'; 
+       }
+       else {
+         label.innerHTML = label.innerHTML.replace("[-]", "[+] {...}"); 
+         e.style.display = 'none'; 
+       }
+     }
+	</script>
+  </head>
+  <body>
+    <h3>XmlWriter.cpp</h3>
+    <hr />
+    <div class="indent">
+      <h4>Dependencies:</h4>
+      <a href="AbstrSynTree.cpp.html">AbstrSynTree.cpp</a><br />
+      <a href="FileSystem.cpp.html">FileSystem.cpp</a><br />
+      <a href="ScopeStack.cpp.html">ScopeStack.cpp</a><br />
+      <a href="XmlReader.cpp.html">XmlReader.cpp</a><br />
+      <a href="XmlReader.h.html">XmlReader.h</a><br />
+      <a href="XmlWriter.h.html">XmlWriter.h</a><br />
+    </div>
+    <hr />
+    <pre>
+///////////////////////////////////////////////////////////////////////
+// XmlWriter.cpp - Create XML Strings                                //
+// ver 4                                                             //
+// Language:    Visual C++, Visual Studio 2010, SP1                  //
+// platform:    Toshiba Portege R705, Windows 7, Home Premium, SP1   //
+// Application: Summer 2011 Projects                                 //
+// Author:      Jim Fawcett, Syracuse University, CST 4-187          //
+//              www.lcs.syr.edu/faculty/fawcett, (315) 443-3948      //
+///////////////////////////////////////////////////////////////////////
+
+#include "XmlWriter.h"
+
+//----&lt; indent helper function &gt;-------------------------------------
+
+void XmlWriter::indentIt()
+<div onclick="toggle_visibility('id1', 'x1'); " id="x1">[-]</div><pre id="id1">{
+    _xml += '\n';
+    for(size_t i=0; i&lt;_level; ++i)
+      _xml += "  ";
+}</pre>
+//----&lt; add opening tag &gt;--------------------------------------------
+
+XmlWriter& XmlWriter::start(const std::string& tag)
+<div onclick="toggle_visibility('id2', 'x2'); " id="x2">[-]</div><pre id="id2">{
+  if(_indented)
+<div onclick="toggle_visibility('id3', 'x3'); " id="x3">[-]</div><pre id="id3">  {
+    indentIt();
+    ++_level;
+  }</pre>
+  _tag = tag;
+  _xml += '&lt;' + tag + '&gt;';
+  tagStack.push(tag);
+  return *this;
+}</pre>
+//----&lt; add attribute to opening tag &gt;-------------------------------
+//
+//  Must be applied before adding body or closing
+//
+XmlWriter& XmlWriter::addAttribute(const std::string& name, const std::string& value)
+<div onclick="toggle_visibility('id4', 'x4'); " id="x4">[-]</div><pre id="id4">{
+  position = _xml.find_last_of('&gt;');
+  if(_xml[--position] == '/')
+<div onclick="toggle_visibility('id5', 'x5'); " id="x5">[-]</div><pre id="id5">  {
+    _xml.insert(position,'"' + value + '"' + ' ');
+    _xml.insert(position,name + '=');
+  }</pre>
+  else
+<div onclick="toggle_visibility('id6', 'x6'); " id="x6">[-]</div><pre id="id6">  {
+    _xml.insert(++position,'"' + value + '"');
+    _xml.insert(position,' ' + name + '=');
+  }</pre>
+  return *this;
+}</pre>
+//----&lt; add body string to opening tag &gt;-----------------------------
+
+XmlWriter& XmlWriter::addBody(const std::string& body)
+<div onclick="toggle_visibility('id7', 'x7'); " id="x7">[-]</div><pre id="id7">{
+  if(_indented)
+<div onclick="toggle_visibility('id8', 'x8'); " id="x8">[-]</div><pre id="id8">  {
+    indentIt();
+  }</pre>
+  _xml += body;
+  return *this;
+}</pre>
+//----&lt; add closing tag &gt;--------------------------------------------
+
+XmlWriter& XmlWriter::end()
+<div onclick="toggle_visibility('id9', 'x9'); " id="x9">[-]</div><pre id="id9">{
+  if(_indented)
+<div onclick="toggle_visibility('id10', 'x10'); " id="x10">[-]</div><pre id="id10">  {
+    --_level;
+    indentIt();
+  }</pre>
+  _tag = tagStack.top();
+  tagStack.pop();
+  _xml += "&lt;/" + _tag + '&gt;';
+  return *this;
+}</pre>
+//----&lt; construct element from tag and body &gt;------------------------
+
+XmlWriter& XmlWriter::element(const std::string& tag, const std::string& body)
+<div onclick="toggle_visibility('id11', 'x11'); " id="x11">[-]</div><pre id="id11">{
+  start(tag);
+  addBody(body);
+  end();
+  return *this;
+}</pre>
+//----&lt; add XML declaration &gt;----------------------------------------
+//
+//  May be invoked once anytime during construction
+//
+XmlWriter& XmlWriter::addDeclaration()
+<div onclick="toggle_visibility('id12', 'x12'); " id="x12">[-]</div><pre id="id12">{
+  _xml = "&lt;? xml version=\"1.0\" ?&gt;" + _xml;
+  return *this;
+}</pre>
+//----&lt; add XML comment ---------------------------------------------
+//
+//  Will be placed at the end of XML constructed so far
+//
+XmlWriter& XmlWriter::addComment(const std::string& cmt)
+<div onclick="toggle_visibility('id13', 'x13'); " id="x13">[-]</div><pre id="id13">{
+  if(_indented)
+<div onclick="toggle_visibility('id14', 'x14'); " id="x14">[-]</div><pre id="id14">  {
+    indentIt();
+  }</pre>
+  _xml += "&lt;!-- " + cmt + " --&gt;";
+  return *this;
+}</pre>
+//----&lt; test stub &gt;--------------------------------------------------
+
+#ifdef TEST_XMLWRITER
+
+#include &lt;iostream&gt;
+#include &lt;fstream&gt;
+
+void mOut(const std::string& message)
+<div onclick="toggle_visibility('id15', 'x15'); " id="x15">[-]</div><pre id="id15">{
+  std::cout &lt;&lt; "\n  " &lt;&lt; message.c_str();
+}</pre>
+
+void main()
+<div onclick="toggle_visibility('id16', 'x16'); " id="x16">[-]</div><pre id="id16">{
+  mOut("Testing XmlWriter");
+  mOut("=================");
+
+  mOut("creating XML writer object:"); 
+  XmlWriter wtr;
+  wtr.indent();
+
+  mOut("adding XML declaration:");
+  wtr.addDeclaration();
+  mOut(wtr.xml());
+
+  mOut("adding comment:");
+  wtr.addComment("top level comment");
+  mOut(wtr.xml());
+
+  mOut("adding root element:");
+  wtr.start("root");
+  mOut(wtr.xml());
+
+  mOut("adding attributes:");
+  wtr.addAttribute("att1","val1");
+  wtr.addAttribute("att2","val2");
+  mOut(wtr.xml());
+
+  mOut("adding comment:");
+  wtr.addComment("comment in root's body");
+  mOut(wtr.xml());
+
+  mOut("Creating self-closing element:");
+  wtr.start("child1");
+  mOut(wtr.xml());
+
+  mOut("adding attribute:");
+  wtr.addAttribute("c1name","c1value");
+  mOut(wtr.xml());
+  
+  mOut("adding child to root's body:");
+  wtr.end();
+  mOut(wtr.xml());
+
+  mOut("adding another comment");
+  wtr.addComment("another root's body comment");
+  mOut(wtr.xml());
+
+  wtr.start("child2");
+  wtr.start("grandchild21");
+  wtr.end();
+  wtr.end();
+
+  mOut("adding string to root's body:"); 
+  wtr.addBody("root's body");
+  mOut(wtr.xml());
+
+  mOut("closing root element:\n");
+  wtr.end();
+
+  std::cout &lt;&lt; "\n\n  writing completed XML";
+  std::cout &lt;&lt; "\n -----------------------\n";
+  std::cout &lt;&lt; wtr.xml();
+
+  mOut("\n  writing XML to file \"Test.xml\":");
+  std::ofstream out("test.xml");
+  if(out.good())
+<div onclick="toggle_visibility('id17', 'x17'); " id="x17">[-]</div><pre id="id17">  {
+    out &lt;&lt; wtr.xml().c_str();
+    out.close();
+  }</pre>
+  std::cout &lt;&lt; std::endl;
+
+  mOut("creating composite element:");
+  XmlWriter cwtr, bcwtr1, bcwtr2;
+  std::string temp = 
+    bcwtr1.element("child1","child1's body")
+    .element("child2","child2's body").xml();
+  std::cout &lt;&lt; "\n  " &lt;&lt; bcwtr1.xml();
+  bcwtr1.clear();
+
+  std::cout &lt;&lt; "\n  " &lt;&lt;
+    cwtr.start("parent")
+    .addBody(bcwtr1.element("child1","child1's body").xml())
+    .addBody(bcwtr2.element("child2","body2").xml())
+    .end().xml();
+  std::cout &lt;&lt; "\n\n";
+}</pre>
+#endif
+    </pre>
+    <hr />
+  </body>
+</html>

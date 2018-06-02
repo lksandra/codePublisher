@@ -1,0 +1,254 @@
+<html>
+  <head>
+    <style>
+		body {
+			margin:20px; color:black; background-color:#eee;
+			font-family:Consolas; font-weight:600; font-size:110 % ;
+		}
+		.indent{ margin-left:20px; margin-right:20px; }
+		h4{ margin-bottom: 3px; margin-top:3px; }
+	</style>
+	<script type = "text/javascript">
+     function toggle_visibility(id, id2) {
+       var e = document.getElementById(id); 
+       var label = document.getElementById(id2); 
+       if (e.style.display == 'none') {
+         label.innerHTML = label.innerHTML.replace("[+] {...}", "[-]");
+         e.style.display = 'block'; 
+       }
+       else {
+         label.innerHTML = label.innerHTML.replace("[-]", "[+] {...}"); 
+         e.style.display = 'none'; 
+       }
+     }
+	</script>
+  </head>
+  <body>
+    <h3>Test_Executive.cpp</h3>
+    <hr />
+    <div class="indent">
+      <h4>Dependencies:</h4>
+      <a href="AbstrSynTree.h.html">AbstrSynTree.h</a><br />
+      <a href="ActionsAndRules.h.html">ActionsAndRules.h</a><br />
+      <a href="ConfigureParser.h.html">ConfigureParser.h</a><br />
+      <a href="Dep_Anal.h.html">Dep_Anal.h</a><br />
+      <a href="Dep_Anal1.h.html">Dep_Anal1.h</a><br />
+      <a href="Dep_Table.h.html">Dep_Table.h</a><br />
+      <a href="Executive.h.html">Executive.h</a><br />
+      <a href="FileSystem.h.html">FileSystem.h</a><br />
+      <a href="GrammarHelpers.h.html">GrammarHelpers.h</a><br />
+      <a href="Graph.h.html">Graph.h</a><br />
+      <a href="Logger.h.html">Logger.h</a><br />
+      <a href="Parser.h.html">Parser.h</a><br />
+      <a href="ScopeStack.h.html">ScopeStack.h</a><br />
+      <a href="Type_Analysis.h.html">Type_Analysis.h</a><br />
+      <a href="Type_Table.h.html">Type_Table.h</a><br />
+    </div>
+    <hr />
+    <pre>
+/////////////////////////////////////////////////////////////////////
+//	Project#2:		Type-based Dependency Analysis				   //
+//					To create a Type-based dependency analyzer	   //
+//																   //
+//	## Created by using Prof. Jim Fawcett's 'CodeAnalyzer'     ##  //
+//  ## project and augmenting it with 'Type Analysis',         ##  //
+//  ## 'Dependency Analysis' and 'Strong Components' features. ##  //
+//																   //
+//  Test_Executive.cpp: Test-stub for Test Executive			   //
+//  *************************************************************  //
+//	Version:		1.0											   //
+//  Date:			03/15/2017									   //
+//  Language:       Visual C++, Version 11.						   //
+//  Platform:       Visual Studio Community Edition				   //
+//					HP ENVY, Windows 10				               //
+//  Application:    CSE687 - Object Oriented Design                //
+//  Author:         Sachin Basavani Shivashankara				   //
+//	SUID:			267871645									   //
+//  Ph:, email:     (315)751-5895, sbasavan@syr.edu				   //
+/////////////////////////////////////////////////////////////////////
+
+#include "Test_Executive.h"
+
+using namespace CodeAnalysis;
+using namespace GraphLib;
+
+using Rslt = Logging::StaticLogger&lt;0&gt;;
+using Demo = Logging::StaticLogger&lt;1&gt;;
+using Dbug = Logging::StaticLogger&lt;2&gt;;
+using TypeTableMap = std::map&lt;std::string, std::vector&lt;CodeAnalysis::TypeInfo&gt;&gt;;
+using DepTableMap = std::map&lt;std::string, DepInfo&gt;;
+
+typedef Graph&lt;std::string, std::string&gt; graph;
+typedef Vertex&lt;std::string, std::string&gt; vertex;
+typedef Display&lt;std::string, std::string&gt; display;
+
+//#ifdef TEST_EXE
+
+// Test stub to demonstrate requirements
+int main(int argc, char* argv[])
+<div onclick="toggle_visibility('id1', 'x1'); " id="x1">[-]</div><pre id="id1">{
+	using namespace CodeAnalysis;
+
+	CodeAnalysisExecutive exec;
+	map&lt;std::string, vertex&gt; vrMap;
+	graph g;
+
+<div onclick="toggle_visibility('id2', 'x2'); " id="x2">[-]</div><pre id="id2">	try {
+		bool succeeded = exec.ProcessCommandLine(argc, argv);
+		if (!succeeded)
+<div onclick="toggle_visibility('id3', 'x3'); " id="x3">[-]</div><pre id="id3">		{
+			return 1;
+		}</pre>
+		exec.setDisplayModes();
+		exec.startLogger(std::cout);
+
+		std::ostringstream tOut("Dependency Analysis");
+		Utils::sTitle(tOut.str(), 3, 92, tOut, '=');
+		Rslt::write(tOut.str());
+
+		//Rslt::write("\n     " + exec.getAnalysisPath());
+		Rslt::write("\n     " + exec.systemTime());
+		Rslt::flush();
+		exec.showCommandLineArguments(argc, argv);
+		Rslt::write("\n");
+
+		exec.getSourceFiles();
+		exec.processSourceCode(true);
+		//exec.complexityAnalysis();
+		exec.dispatchOptionalDisplays();
+		exec.flushLogger();
+		//exec.displayMetricSummary(50, 10);
+		
+		// Requirement 1
+		std::cout &lt;&lt; "\n" &lt;&lt; "***********************************************";
+		std::cout &lt;&lt; "\n" &lt;&lt; "Demonstrating Requirement #1: Using VS 2015 C++";
+		std::cout &lt;&lt; "\n" &lt;&lt; "***********************************************";
+		std::cout &lt;&lt; "\n" &lt;&lt; "Please examine code in VS to verify" &lt;&lt; "\n\n\n";
+
+		// Requirement 2
+		std::cout &lt;&lt; "\n" &lt;&lt; "****************************************************************";
+		std::cout &lt;&lt; "\n" &lt;&lt; "Demonstrating Requirement #2: To only use C++ standard libraries";
+		std::cout &lt;&lt; "\n" &lt;&lt; "****************************************************************";
+		std::cout &lt;&lt; "\n" &lt;&lt; "Please examine code in VS to verify" &lt;&lt; "\n\n\n";
+
+		// Requirement 3
+		std::cout &lt;&lt; "\n" &lt;&lt; "*****************************************************************";
+		std::cout &lt;&lt; "\n" &lt;&lt; "Demonstrating Requirement #3: To provide C++ package as described";
+		std::cout &lt;&lt; "\n" &lt;&lt; "*****************************************************************";
+		std::cout &lt;&lt; "\n" &lt;&lt; "Please examine code in VS to verify";
+		std::cout &lt;&lt; "\n" &lt;&lt; "Created packages 'Type_Table', 'Type_Analysis' for Type Analysis";
+		std::cout &lt;&lt; "\n" &lt;&lt; "Created packages 'Dependency_Table', 'Dependency_Analysis' for Dependency Analysis";
+		std::cout &lt;&lt; "\n" &lt;&lt; "Imported package 'Graph' to find Strongly Connected Components";
+		std::cout &lt;&lt; "\n" &lt;&lt; "Created package 'Test_Executive' for Requirements Demonstration" &lt;&lt; "\n\n\n";
+		
+		// Requirement 4
+		std::cout &lt;&lt; "\n" &lt;&lt; "*******************************************************************************************";
+		std::cout &lt;&lt; "\n" &lt;&lt; "Demonstrating Requirement #4: To identify all the types defined in a file used in a project";
+		std::cout &lt;&lt; "\n" &lt;&lt; "*******************************************************************************************";
+		std::cout &lt;&lt; "\n" &lt;&lt; "--Displaying Type Table--";
+		// Code related to Type Table 
+		TypeAnalysis ta;
+		ta.doTypeAnal();
+		TypeTable tt = ta.getTypeTable();
+		TypeTableMap dpt = tt.returnTT();
+		std::cout &lt;&lt; "\n\n\n";
+		// Requirement 5
+		std::cout &lt;&lt; "\n" &lt;&lt; "**********************************************************************************************";
+		std::cout &lt;&lt; "\n" &lt;&lt; "Demonstrating Requirement #5: To identify all the dependencies between files used in a project";
+		std::cout &lt;&lt; "\n" &lt;&lt; "**********************************************************************************************";
+		std::cout &lt;&lt; "\n" &lt;&lt; "--Displaying Dependency Table--";
+		// Code related to Dependency Table 
+		set&lt;std::string&gt; f1 = ta.getAllFilenames();
+		DepAnalysis dt;
+		dt.doDepAnal(dpt, f1);
+		DependencyTable dtObj = dt.getDepTable(); //st.returnDepTable();
+		DepTableMap dtMap = dtObj.returnDepTable();
+
+		exec.flushLogger();
+		Rslt::write("\n");
+		std::ostringstream out;
+		//out &lt;&lt; "\n  " &lt;&lt; std::setw(10) &lt;&lt; "searched" &lt;&lt; std::setw(6) &lt;&lt; exec.numDirs() &lt;&lt; " dirs";
+		//out &lt;&lt; "\n  " &lt;&lt; std::setw(10) &lt;&lt; "processed" &lt;&lt; std::setw(6) &lt;&lt; exec.numFiles() &lt;&lt; " files";
+		//Rslt::write(out.str());
+		Rslt::write("\n");
+		exec.stopLogger();
+
+		// Code related to Strongly Connected Components
+		File forComp;
+		for (std::string s : f1)
+<div onclick="toggle_visibility('id4', 'x4'); " id="x4">[-]</div><pre id="id4">		{
+			forComp = FileSystem::Path::getName(s);
+			vertex v(forComp);
+			g.addVertex(v);
+			vrMap.insert_or_assign(forComp, v);
+
+		}</pre>
+
+		//DepTableMap::iterator it = dtMap.begin();
+		//for (it; it != dtMap.end(); ++it)
+<div onclick="toggle_visibility('id5', 'x5'); " id="x5">[-]</div><pre id="id5">		//{
+
+		//	DepInfo val = it-&gt;second;
+		//	for (std::string str : val.DepItem)
+<div onclick="toggle_visibility('id6', 'x6'); " id="x6">[-]</div><pre id="id6">		//	{
+		//		g.addEdge(str, vrMap.find(it-&gt;first)-&gt;second, vrMap.find(str)-&gt;second);
+		//	}</pre>
+		//}</pre>
+		//std::cout &lt;&lt; "\n\n";
+		//// To display Dependency Analysis results using ouput machinery provided in 'Graph' package
+		////display::show(g);
+
+		//// Requirement 7 (Part 1)
+		//std::cout &lt;&lt; "\n" &lt;&lt; "************************************************************************************";
+		//std::cout &lt;&lt; "\n" &lt;&lt; "Demonstrating Requirement #7 (Part 1): To display Dependency Analysis results in XML";
+		//std::cout &lt;&lt; "\n" &lt;&lt; "************************************************************************************";
+
+		//// Displaying Dependency Analysis results into XML
+		//std::cout &lt;&lt; "\n" &lt;&lt; "Displaying and storing Dependency Analysis results in XML";
+		//std::string str = GraphToXmlString(g);
+		//std::cout &lt;&lt; str &lt;&lt; "\n\n\n";
+
+		// Commented Project2 code on 03/28/2017///////////////////////////////////////////////////////////////////////////////
+		/*
+		// Requirement 6
+		std::cout &lt;&lt; "\n" &lt;&lt; "************************************************************************************************";
+		std::cout &lt;&lt; "\n" &lt;&lt; "Demonstrating Requirement #6: To find Strongly Connected Components from the Dependency Analysis";
+		std::cout &lt;&lt; "\n" &lt;&lt; "************************************************************************************************";
+		std::cout &lt;&lt; "\n" &lt;&lt; "--Displaying Strongly Connected Components--" &lt;&lt; "\n\n";
+		// Code to display Strongly Connected Components results in XML
+		g.SCC(g);
+		std::vector&lt;std::vector&lt;std::string&gt;&gt; rs = g.getSCC();
+		std::cout &lt;&lt; "\n\n";
+
+		// Requirement 7 (Part 2)
+		std::cout &lt;&lt; "\n" &lt;&lt; "**************************************************************************************";
+		std::cout &lt;&lt; "\n" &lt;&lt; "Demonstrating Requirement #7 (Part 2): To display Strongly Connected Components in XML";
+		std::cout &lt;&lt; "\n" &lt;&lt; "**************************************************************************************";
+		std::string sccStr = SCCToXmlString(rs);
+		std::cout &lt;&lt; sccStr &lt;&lt; "\n";
+
+		std::ofstream outToFile(exec.getXmlFilePath());
+		outToFile &lt;&lt; "&lt;results&gt;\n";
+		outToFile &lt;&lt; "&lt;!-- Dependency Analysis Result --&gt;\n";
+		outToFile &lt;&lt; str &lt;&lt; "\n";
+		outToFile &lt;&lt; "&lt;!-- Strongly Connected Components --&gt;\n";
+		outToFile &lt;&lt; sccStr &lt;&lt; "\n&lt;/results&gt;\n";
+		std::cout &lt;&lt; "\n\n";
+		*/
+	}</pre>
+	catch (std::exception& except)
+<div onclick="toggle_visibility('id7', 'x7'); " id="x7">[-]</div><pre id="id7">	{
+		exec.flushLogger();
+		std::cout &lt;&lt; "\n\n  caught exception in Executive::main: " + std::string(except.what()) + "\n\n";
+		exec.stopLogger();
+		return 1;
+	}</pre>
+
+	system("pause");
+	return 0;
+}</pre>
+//#endif
+    </pre>
+    <hr />
+  </body>
+</html>

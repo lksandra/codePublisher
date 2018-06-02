@@ -1,0 +1,283 @@
+<html>
+  <head>
+    <style>
+		body {
+			margin:20px; color:black; background-color:#eee;
+			font-family:Consolas; font-weight:600; font-size:110 % ;
+		}
+		.indent{ margin-left:20px; margin-right:20px; }
+		h4{ margin-bottom: 3px; margin-top:3px; }
+	</style>
+	<script type = "text/javascript">
+     function toggle_visibility(id, id2) {
+       var e = document.getElementById(id); 
+       var label = document.getElementById(id2); 
+       if (e.style.display == 'none') {
+         label.innerHTML = label.innerHTML.replace("[+] {...}", "[-]");
+         e.style.display = 'block'; 
+       }
+       else {
+         label.innerHTML = label.innerHTML.replace("[-]", "[+] {...}"); 
+         e.style.display = 'none'; 
+       }
+     }
+	</script>
+  </head>
+  <body>
+    <h3>Dep_Table.h</h3>
+    <hr />
+    <div class="indent">
+      <h4>Dependencies:</h4>
+      <a href="AbstrSynTree.cpp.html">AbstrSynTree.cpp</a><br />
+      <a href="AbstrSynTree.h.html">AbstrSynTree.h</a><br />
+      <a href="ActionsAndRules.h.html">ActionsAndRules.h</a><br />
+      <a href="ConfigureParser.h.html">ConfigureParser.h</a><br />
+      <a href="Dep_Anal.h.html">Dep_Anal.h</a><br />
+      <a href="Dep_Anal1.h.html">Dep_Anal1.h</a><br />
+      <a href="Executive.h.html">Executive.h</a><br />
+      <a href="FileSystem.h.html">FileSystem.h</a><br />
+      <a href="GrammarHelpers.h.html">GrammarHelpers.h</a><br />
+      <a href="Parser.h.html">Parser.h</a><br />
+      <a href="ScopeStack.h.html">ScopeStack.h</a><br />
+      <a href="Type_Analysis.h.html">Type_Analysis.h</a><br />
+      <a href="Type_Table.h.html">Type_Table.h</a><br />
+      <a href="XmlWriter.cpp.html">XmlWriter.cpp</a><br />
+    </div>
+    <hr />
+    <pre>
+#pragma once
+#ifndef DEP_TABLE
+#define DEP_TABLE
+
+/////////////////////////////////////////////////////////////////////
+//	Project#2:			Type-based Dependency Analysis			   //
+//					    To create a Type-based dependency analyzer //
+//																   //
+//	## Created by using Prof. Jim Fawcett's 'CodeAnalyzer'     ##  //
+//  ## project and augmenting it with 'Type Analysis',         ##  //
+//  ## 'Dependency Analysis' and 'Strong Components' features. ##  //
+//																   //
+//  Dep_Table.h:	   Header file to create Dependency Table	   //
+//  *************************************************************  //
+//	Version:		   1.0										   //
+//  Date:			   03/15/2017								   //
+//  Language:          Visual C++, Version 11.					   //
+//  Platform:          Visual Studio Community Edition			   //
+//					   HP ENVY, Windows 10				           //
+//  Application:       CSE687 - Object Oriented Design             //
+//  Author:            Sachin Basavani Shivashankara			   //
+//	SUID:			   267871645								   //
+//  Ph:, email:        (315)751-5895, sbasavan@syr.edu			   //
+/////////////////////////////////////////////////////////////////////
+
+// Module Operations:
+// ==================
+// Contains a class (DependencyTable) that saves and displays Dependency Table.
+// 
+// Public Interface:
+// ==================
+//			bool save(std::string typeName, DepInfo val);				// Save into Dependency Table
+//			void display();												// Display Dependency Table
+//			void displayHeader();										// Display Dependency Table Header
+//			std::map&lt;std::string, DepInfo&gt;& returnDepTable();			// returns Dependency Table
+//												 
+// Required Files:
+// ===============
+// Dep_Table.h, Dep_Table.cpp
+
+#include &lt;iostream&gt;
+#include &lt;string&gt;
+#include &lt;vector&gt;
+#include &lt;map&gt; 
+#include &lt;iomanip&gt; 
+#include &lt;sstream&gt;
+#include &lt;unordered_map&gt;
+#include &lt;functional&gt;
+#include &lt;algorithm&gt;
+#include &lt;exception&gt;
+#include &lt;chrono&gt;
+#include &lt;ctime&gt;
+
+#include "../Parser/Parser.h"
+#include "../FileSystem/FileSystem.h"
+#include "../FileMgr/FileMgr.h"
+#include "../Parser/ActionsAndRules.h"
+#include "../Parser/ConfigureParser.h"
+#include "../AbstractSyntaxTree/AbstrSynTree.h"
+#include "../Logger/Logger.h"
+#include "../Utilities/Utilities.h"
+#include "../Analyzer/Executive.h"
+#include"../Type_Table/Type_Table.h"
+#include"../Type_Analysis/Type_Analysis.h"
+#include "../Dependency_Analysis/Dep_Anal.h"
+#include"../Type_Table/Type_Table.h"
+
+namespace CodeAnalysis
+<div onclick="toggle_visibility('id1', 'x1'); " id="x1">[-]</div><pre id="id1">{
+	// Struct to store dependencies (vector of string)
+	struct DepInfo
+<div onclick="toggle_visibility('id2', 'x2'); " id="x2">[-]</div><pre id="id2">	{
+		std::vector&lt;std::string&gt; DepItem ;
+	};</pre>
+
+	// Class to save and display Dependency Table
+	class DependencyTable
+<div onclick="toggle_visibility('id3', 'x3'); " id="x3">[-]</div><pre id="id3">	{
+	private:
+		std::map&lt;std::string, DepInfo&gt; DTmap;						// Dependency Table map
+	public:
+		bool save(std::string typeName, DepInfo val);				// Save into Dependency Table
+		void display();												// Display Dependency Table
+		void displayHeader();										// Display Dependency Table Header
+		std::map&lt;std::string, DepInfo&gt;& returnDepTable();			// returns Dependency Table
+	};</pre>
+
+	// Returns Dependency Table
+	inline std::map&lt;std::string, DepInfo&gt;& DependencyTable::returnDepTable()
+<div onclick="toggle_visibility('id4', 'x4'); " id="x4">[-]</div><pre id="id4">	{
+		return DTmap;
+	}</pre>
+	// Saves into Dependency Table
+	inline bool DependencyTable::save(std::string typeName, DepInfo val)
+<div onclick="toggle_visibility('id5', 'x5'); " id="x5">[-]</div><pre id="id5">	{
+<div onclick="toggle_visibility('id6', 'x6'); " id="x6">[-]</div><pre id="id6">		for (auto v : val.DepItem) {
+			DTmap[typeName].DepItem.push_back(v);
+		}</pre>
+
+		return true;
+	}</pre>
+	// Displays Dependency Header
+	inline void DependencyTable::displayHeader()
+<div onclick="toggle_visibility('id7', 'x7'); " id="x7">[-]</div><pre id="id7">	{
+		std::cout &lt;&lt; "\n";
+		std::cout &lt;&lt; std::right;
+		std::cout &lt;&lt; "\n" &lt;&lt; "##########################################################################################";
+		std::cout &lt;&lt; "\n" &lt;&lt; "                                 --DEPENDENCY TABLE--									   ";
+		std::cout &lt;&lt; "\n" &lt;&lt; "##########################################################################################";
+		std::cout &lt;&lt; "\n ";
+		std::cout &lt;&lt; std::setw(25) &lt;&lt; "File Name";
+		std::cout &lt;&lt; std::setw(25) &lt;&lt; "Dependencies";
+		std::cout &lt;&lt; std::right;
+		std::cout &lt;&lt; "\n  ";
+		std::cout &lt;&lt; std::setw(25) &lt;&lt; "-------------------";
+		std::cout &lt;&lt; std::setw(25) &lt;&lt; "-------------------";
+		
+	}</pre>
+
+	// Displays Dependency Table
+	inline void DependencyTable::display()
+<div onclick="toggle_visibility('id8', 'x8'); " id="x8">[-]</div><pre id="id8">	{
+		DependencyTable::displayHeader();
+		std::cout &lt;&lt; "\n ";
+		std::map&lt;std::string, DepInfo&gt;::iterator it = DTmap.begin();
+		for (it; it != DTmap.end(); ++it)
+<div onclick="toggle_visibility('id9', 'x9'); " id="x9">[-]</div><pre id="id9">		{
+			std::string fileName = FileSystem::Path::getName(it-&gt;first);
+			std::string filePath = fileName + ".html";
+			std::ofstream myfile(filePath);
+			if (myfile.is_open())
+<div onclick="toggle_visibility('id10', 'x10'); " id="x10">[-]</div><pre id="id10">			{
+				std::cout &lt;&lt; std::right;
+				DepInfo val = it-&gt;second;
+
+				myfile &lt;&lt;
+					"&lt;html&gt;" &lt;&lt; "\n" &lt;&lt;
+					"  &lt;head&gt;" &lt;&lt; "\n" &lt;&lt;
+					"    &lt;style&gt;" &lt;&lt; "\n" &lt;&lt;
+<div onclick="toggle_visibility('id11', 'x11'); " id="x11">[-]</div><pre id="id11">					"		body {" &lt;&lt; "\n" &lt;&lt;
+					"			margin:20px; color:black; background-color:#eee;" &lt;&lt; "\n" &lt;&lt;
+					"			font-family:Consolas; font-weight:600; font-size:110 % ;" &lt;&lt; "\n" &lt;&lt;
+					"		}" &lt;&lt; "\n" &lt;&lt;</pre>
+					"		.indent{ margin-left:20px; margin-right:20px; }" &lt;&lt; "\n" &lt;&lt;
+					"		h4{ margin-bottom: 3px; margin-top:3px; }" &lt;&lt; "\n" &lt;&lt;
+					"	&lt;/style&gt;" &lt;&lt; "\n" &lt;&lt;
+					
+					"	&lt;script type = \"text/javascript\"&gt;" &lt;&lt; "\n" &lt;&lt;
+
+<div onclick="toggle_visibility('id12', 'x12'); " id="x12">[-]</div><pre id="id12">					"     function toggle_visibility(id, id2) {" &lt;&lt; "\n" &lt;&lt;
+					"       var e = document.getElementById(id); " &lt;&lt; "\n" &lt;&lt;
+					"       var label = document.getElementById(id2); " &lt;&lt; "\n" &lt;&lt;
+
+<div onclick="toggle_visibility('id13', 'x13'); " id="x13">[-]</div><pre id="id13">					"       if (e.style.display == 'none') {" &lt;&lt; "\n" &lt;&lt;
+					"         label.innerHTML = label.innerHTML.replace(\"[+] {...}\", \"[-]\");" &lt;&lt; "\n" &lt;&lt;
+					"         e.style.display = 'block'; " &lt;&lt; "\n" &lt;&lt;
+					"       }" &lt;&lt; "\n" &lt;&lt;</pre>
+<div onclick="toggle_visibility('id14', 'x14'); " id="x14">[-]</div><pre id="id14">					"       else {" &lt;&lt; "\n" &lt;&lt;
+					"         label.innerHTML = label.innerHTML.replace(\"[-]\", \"[+] {...}\"); " &lt;&lt; "\n" &lt;&lt;
+					"         e.style.display = 'none'; " &lt;&lt; "\n" &lt;&lt;
+					"       }" &lt;&lt; "\n" &lt;&lt;</pre>
+					"     }" &lt;&lt; "\n" &lt;&lt;</pre>
+					"	&lt;/script&gt;" &lt;&lt; "\n" &lt;&lt;
+
+					"  &lt;/head&gt;" &lt;&lt; "\n" &lt;&lt;
+					"  &lt;body&gt;" &lt;&lt; "\n" &lt;&lt;
+					
+					"    &lt;h3&gt;" &lt;&lt; fileName &lt;&lt; "&lt;/h3&gt;" &lt;&lt; "\n" &lt;&lt;
+					"    &lt;hr /&gt;" &lt;&lt; "\n" &lt;&lt;
+					"    &lt;div class=\"indent\"&gt;" &lt;&lt; "\n" &lt;&lt;
+					"      &lt;h4&gt;Dependencies:&lt;/h4&gt;" &lt;&lt; "\n";
+
+				for (std::string str : val.DepItem)
+<div onclick="toggle_visibility('id15', 'x15'); " id="x15">[-]</div><pre id="id15">				{
+					std::cout &lt;&lt; std::setw(25) &lt;&lt; fileName;
+					std::cout &lt;&lt; std::setw(25) &lt;&lt; str;
+					std::cout &lt;&lt; "\n ";
+
+					std::string depFilePath =  str + ".html";
+
+					myfile &lt;&lt; "      &lt;a href=\"" &lt;&lt; depFilePath &lt;&lt; "\"&gt;" &lt;&lt; str &lt;&lt; "&lt;/a&gt;&lt;br /&gt;" &lt;&lt; "\n";
+				}</pre>
+
+				myfile &lt;&lt; "    &lt;/div&gt;" &lt;&lt; "\n" &lt;&lt;
+					"    &lt;hr /&gt;" &lt;&lt; "\n";
+			}</pre>
+
+			std::ifstream fin(it-&gt;first);
+			std::string line;
+			myfile &lt;&lt; "    &lt;pre&gt;" &lt;&lt; "\n";
+
+			int brCount = 0;
+			size_t offset = 0;
+			while (std::getline(fin, line, '\n'))
+<div onclick="toggle_visibility('id16', 'x16'); " id="x16">[-]</div><pre id="id16">			{
+				offset = 0;
+				while ((offset = line.find("&lt;", offset)) != std::string::npos)
+<div onclick="toggle_visibility('id17', 'x17'); " id="x17">[-]</div><pre id="id17">				{
+					line.replace(offset, 1, std::string("&lt;"));
+					offset = offset + 4;
+				}</pre>
+				offset = 0;
+				while ((offset = line.find("&gt;", offset)) != std::string::npos)
+<div onclick="toggle_visibility('id18', 'x18'); " id="x18">[-]</div><pre id="id18">				{
+					line.replace(offset, 1, std::string("&gt;"));
+					offset = offset + 4;
+				}</pre>
+				offset = 0;
+				if ((offset = line.find("{", offset)) != std::string::npos && line.find("}", offset) == std::string::npos)
+<div onclick="toggle_visibility('id19', 'x19'); " id="x19">[-]</div><pre id="id19">				{
+					brCount += 1;
+<div onclick="toggle_visibility('id20', 'x20'); " id="x20">[-]</div><pre id="id20">					line = "&lt;pre id=\"id" + std::to_string(brCount) + "\"&gt;" + line.replace(offset, 1, std::string("{"));
+					line = "&lt;div onclick=\"toggle_visibility('id" + std::to_string(brCount) + "', 'x" + std::to_string(brCount) + "'); \" id=\"x" + std::to_string(brCount) + "\"&gt;[-]&lt;/div&gt;" + line;
+				}</pre>
+
+				offset = 0;
+				if (line.find("{", offset) == std::string::npos && (offset = line.find("}", offset)) != std::string::npos)
+<div onclick="toggle_visibility('id21', 'x21'); " id="x21">[-]</div><pre id="id21">				{
+					line += "&lt;/pre&gt;";
+				}</pre>
+				
+				myfile &lt;&lt; line &lt;&lt; "\n";
+			}</pre>
+			myfile &lt;&lt; "    &lt;/pre&gt;" &lt;&lt; "\n";
+			myfile &lt;&lt; "    &lt;hr /&gt;" &lt;&lt; "\n";
+
+			myfile &lt;&lt; "  &lt;/body&gt;" &lt;&lt; "\n";
+			myfile &lt;&lt; "&lt;/html&gt;" &lt;&lt; "\n";
+		}</pre>
+	}</pre>
+}</pre>
+#endif
+    </pre>
+    <hr />
+  </body>
+</html>

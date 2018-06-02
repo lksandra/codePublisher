@@ -1,0 +1,133 @@
+<html>
+  <head>
+    <style>
+		body {
+			margin:20px; color:black; background-color:#eee;
+			font-family:Consolas; font-weight:600; font-size:110 % ;
+		}
+		.indent{ margin-left:20px; margin-right:20px; }
+		h4{ margin-bottom: 3px; margin-top:3px; }
+	</style>
+	<script type = "text/javascript">
+     function toggle_visibility(id, id2) {
+       var e = document.getElementById(id); 
+       var label = document.getElementById(id2); 
+       if (e.style.display == 'none') {
+         label.innerHTML = label.innerHTML.replace("[+] {...}", "[-]");
+         e.style.display = 'block'; 
+       }
+       else {
+         label.innerHTML = label.innerHTML.replace("[-]", "[+] {...}"); 
+         e.style.display = 'none'; 
+       }
+     }
+	</script>
+  </head>
+  <body>
+    <h3>Cpp11-BlockingQueue.cpp</h3>
+    <hr />
+    <div class="indent">
+      <h4>Dependencies:</h4>
+      <a href="AbstrSynTree.cpp.html">AbstrSynTree.cpp</a><br />
+      <a href="Cpp11-BlockingQueue.h.html">Cpp11-BlockingQueue.h</a><br />
+      <a href="FileSystemTest.cpp.html">FileSystemTest.cpp</a><br />
+      <a href="GrammarHelpers.cpp.html">GrammarHelpers.cpp</a><br />
+      <a href="UnitTest.cpp.html">UnitTest.cpp</a><br />
+      <a href="Utilities.h.html">Utilities.h</a><br />
+    </div>
+    <hr />
+    <pre>
+///////////////////////////////////////////////////////////////
+// Cpp11-BlockingQueue.cpp - Thread-safe Blocking Queue      //
+// ver 1.4                                                   //
+// Jim Fawcett, CSE687 - Object Oriented Design, Spring 2013 //
+///////////////////////////////////////////////////////////////
+
+#include &lt;condition_variable&gt;
+#include &lt;mutex&gt;
+#include &lt;thread&gt;
+#include &lt;queue&gt;
+#include &lt;string&gt;
+#include &lt;iostream&gt;
+#include &lt;sstream&gt;
+#include "Cpp11-BlockingQueue.h"
+
+#ifdef TEST_BLOCKINGQUEUE
+
+using namespace Async;
+
+std::mutex ioLock;
+
+void test(BlockingQueue&lt;std::string&gt;* pQ)
+<div onclick="toggle_visibility('id1', 'x1'); " id="x1">[-]</div><pre id="id1">{
+  std::string msg;
+  do
+<div onclick="toggle_visibility('id2', 'x2'); " id="x2">[-]</div><pre id="id2">  {
+    msg = pQ-&gt;deQ();
+<div onclick="toggle_visibility('id3', 'x3'); " id="x3">[-]</div><pre id="id3">    {
+      std::lock_guard&lt;std::mutex&gt; l(ioLock);
+      std::cout &lt;&lt; "\n  thread deQed " &lt;&lt; msg.c_str();
+    }</pre>
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  } while(msg != "quit");</pre>
+}</pre>
+
+int main()
+<div onclick="toggle_visibility('id4', 'x4'); " id="x4">[-]</div><pre id="id4">{
+  std::cout &lt;&lt; "\n  Demonstrating C++11 Blocking Queue";
+  std::cout &lt;&lt; "\n ====================================";
+
+  BlockingQueue&lt;std::string&gt; q;
+  std::thread t(test, &q);
+
+  for(int i=0; i&lt;15; ++i)
+<div onclick="toggle_visibility('id5', 'x5'); " id="x5">[-]</div><pre id="id5">  {
+    std::ostringstream temp;
+    temp &lt;&lt; i;
+    std::string msg = std::string("msg#") + temp.str();
+<div onclick="toggle_visibility('id6', 'x6'); " id="x6">[-]</div><pre id="id6">    {
+      std::lock_guard&lt;std::mutex&gt; l(ioLock);
+      std::cout &lt;&lt; "\n   main enQing " &lt;&lt; msg.c_str();
+    }</pre>
+    q.enQ(msg);
+    std::this_thread::sleep_for(std::chrono::milliseconds(3));
+  }</pre>
+  q.enQ("quit");
+  t.join();
+
+  std::cout &lt;&lt; "\n";
+  std::cout &lt;&lt; "\n  Making move copy of BlockingQueue";
+  std::cout &lt;&lt; "\n -----------------------------------";
+
+  std::string msg = "test";
+  q.enQ(msg);
+  std::cout &lt;&lt; "\n  before move:";
+  std::cout &lt;&lt; "\n    q.size() = " &lt;&lt; q.size();
+  std::cout &lt;&lt; "\n    q.front() = " &lt;&lt; q.front();
+  BlockingQueue&lt;std::string&gt; q2 = std::move(q);  // move assignment
+  std::cout &lt;&lt; "\n  after move:";
+  std::cout &lt;&lt; "\n    q2.size() = " &lt;&lt; q2.size();
+  std::cout &lt;&lt; "\n    q.size() = " &lt;&lt; q.size();
+  std::cout &lt;&lt; "\n    q2 element = " &lt;&lt; q2.deQ() &lt;&lt; "\n";
+
+  std::cout &lt;&lt; "\n  Move assigning state of BlockingQueue";
+  std::cout &lt;&lt; "\n ---------------------------------------";
+  BlockingQueue&lt;std::string&gt; q3;
+  q.enQ("test");
+  std::cout &lt;&lt; "\n  before move:";
+  std::cout &lt;&lt; "\n    q.size() = " &lt;&lt; q.size();
+  std::cout &lt;&lt; "\n    q.front() = " &lt;&lt; q.front();
+  q3 = std::move(q);
+  std::cout &lt;&lt; "\n  after move:";
+  std::cout &lt;&lt; "\n    q.size() = " &lt;&lt; q.size();
+  std::cout &lt;&lt; "\n    q3.size() = " &lt;&lt; q3.size();
+  std::cout &lt;&lt; "\n    q3 element = " &lt;&lt; q3.deQ() &lt;&lt; "\n";
+
+  std::cout &lt;&lt; "\n\n";
+}</pre>
+
+#endif
+    </pre>
+    <hr />
+  </body>
+</html>

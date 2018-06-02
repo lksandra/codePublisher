@@ -1,0 +1,3 @@
+﻿  strong_comp.cpp
+MSVCRTD.lib(exe_main.obj) : error LNK2019: unresolved external symbol main referenced in function "int __cdecl invoke_main(void)" (?invoke_main@@YAHXZ)
+C:\Users\prath\Downloads\Study Materials\OOD\Project 2\CodeAnalyzer\x64\Debug\StrongComponents.exe : fatal error LNK1120: 1 unresolved externals

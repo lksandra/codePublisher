@@ -1,0 +1,227 @@
+<html>
+  <head>
+    <style>
+		body {
+			margin:20px; color:black; background-color:#eee;
+			font-family:Consolas; font-weight:600; font-size:110 % ;
+		}
+		.indent{ margin-left:20px; margin-right:20px; }
+		h4{ margin-bottom: 3px; margin-top:3px; }
+	</style>
+	<script type = "text/javascript">
+     function toggle_visibility(id, id2) {
+       var e = document.getElementById(id); 
+       var label = document.getElementById(id2); 
+       if (e.style.display == 'none') {
+         label.innerHTML = label.innerHTML.replace("[+] {...}", "[-]");
+         e.style.display = 'block'; 
+       }
+       else {
+         label.innerHTML = label.innerHTML.replace("[-]", "[+] {...}"); 
+         e.style.display = 'none'; 
+       }
+     }
+	</script>
+  </head>
+  <body>
+    <h3>Graph.cpp</h3>
+    <hr />
+    <div class="indent">
+      <h4>Dependencies:</h4>
+      <a href="AbstrSynTree.cpp.html">AbstrSynTree.cpp</a><br />
+      <a href="AbstrSynTree.h.html">AbstrSynTree.h</a><br />
+      <a href="ActionsAndRules.h.html">ActionsAndRules.h</a><br />
+      <a href="ConfigureParser.h.html">ConfigureParser.h</a><br />
+      <a href="Dep_Anal.h.html">Dep_Anal.h</a><br />
+      <a href="Dep_Anal1.h.html">Dep_Anal1.h</a><br />
+      <a href="Dep_Table.h.html">Dep_Table.h</a><br />
+      <a href="Executive.h.html">Executive.h</a><br />
+      <a href="GrammarHelpers.cpp.html">GrammarHelpers.cpp</a><br />
+      <a href="GrammarHelpers.h.html">GrammarHelpers.h</a><br />
+      <a href="Graph.h.html">Graph.h</a><br />
+      <a href="Logger.h.html">Logger.h</a><br />
+      <a href="Parser.h.html">Parser.h</a><br />
+      <a href="ScopeStack.cpp.html">ScopeStack.cpp</a><br />
+      <a href="ScopeStack.h.html">ScopeStack.h</a><br />
+      <a href="Type_Analysis.h.html">Type_Analysis.h</a><br />
+      <a href="Type_Table.h.html">Type_Table.h</a><br />
+    </div>
+    <hr />
+    <pre>
+/////////////////////////////////////////////////////////////////////
+//	Project#2:		Type-based Dependency Analysis				   //
+//					To create a Type-based dependency analyzer	   //
+//																   //
+//	## Created by using Prof. Jim Fawcett's 'CodeAnalyzer'     ##  //
+//  ## project and augmenting it with 'Type Analysis',         ##  //
+//  ## 'Dependency Analysis' and 'Strong Components' features. ##  //
+//																   //
+//  Graph.cpp:	    Test-stub for Graph					           //
+//  *************************************************************  //
+//	Version:		1.0											   //
+//  Date:			03/15/2017									   //
+//  Language:       Visual C++, Version 11.						   //
+//  Platform:       Visual Studio Community Edition				   //
+//					HP ENVY, Windows 10				               //
+//  Application:    CSE687 - Object Oriented Design                //
+//  Author:         Sachin Basavani Shivashankara				   //
+//	SUID:			267871645									   //
+//  Ph:, email:     (315)751-5895, sbasavan@syr.edu				   //
+/////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
+// Graph.cpp - Graph Library                                 //
+// Ver 1.6                                                   //
+// Language:    Visual C++ 2012                              //
+// Platform:    Lenova ThinkPad E420s, Windows 7             //
+// Application: Help for CSE687 - OOD, Pr#1, Spring 2013     //
+// Author:      Jim Fawcett, CST 4-187, Syracuse University  //
+//              (315) 443-3948, jfawcett@twcny.rr.com        //
+///////////////////////////////////////////////////////////////
+
+// Augmented the Graph package with functions to find strong components.
+// Created functions after referring to http://www.geeksforgeeks.org/tarjan-algorithm-find-strongly-connected-components/
+// Modified the Graph package on 03/15/2017
+
+#include "Graph.h"
+
+using namespace std;
+using namespace CodeAnalysis;
+using namespace GraphLib;
+
+using Rslt = Logging::StaticLogger&lt;0&gt;;
+using Demo = Logging::StaticLogger&lt;1&gt;;
+using Dbug = Logging::StaticLogger&lt;2&gt;;
+using TypeTableMap = std::map&lt;std::string, std::vector&lt;CodeAnalysis::TypeInfo&gt;&gt;;
+using DepTableMap = std::map&lt;string, DepInfo&gt;;
+
+typedef Graph&lt;std::string, std::string&gt; graph;
+typedef Vertex&lt;std::string, std::string&gt; vertex;
+typedef Display&lt;std::string, std::string&gt; display;
+
+void showVert(Vertex&lt;std::string, std::string&gt;& v)
+<div onclick="toggle_visibility('id1', 'x1'); " id="x1">[-]</div><pre id="id1">{
+  std::cout &lt;&lt; "\n  " &lt;&lt; v.id();
+}</pre>
+
+template&lt;typename V, typename E&gt;
+void TshowVert(Vertex&lt;V,E&gt;& v)
+<div onclick="toggle_visibility('id2', 'x2'); " id="x2">[-]</div><pre id="id2">{
+  std::cout &lt;&lt; "\n  " &lt;&lt; v.id();
+}</pre>
+
+#ifdef TEST_GRAPH
+
+// Test stub for Graph
+int main()
+<div onclick="toggle_visibility('id3', 'x3'); " id="x3">[-]</div><pre id="id3">{
+
+  std::cout &lt;&lt; "\n  Testing Graph Library";
+  std::cout &lt;&lt; "\n =======================\n";
+  try
+<div onclick="toggle_visibility('id4', 'x4'); " id="x4">[-]</div><pre id="id4">  {
+    std::cout &lt;&lt; "\n  Constructing Graph instance";
+    std::cout &lt;&lt; "\n -----------------------------";
+    graph g;
+    vertex v1("v1");
+    vertex v2("v2");
+    vertex v3("v3");
+    vertex v4("v4");
+    vertex v5("v5", 50);
+    g.addVertex(v2);
+    g.addVertex(v1);
+    g.addVertex(v3);
+    g.addVertex(v4);
+    g.addVertex(v5);
+    g.addEdge("e1",v1,v2);
+    g.addEdge("e2",v1,v3);
+    g.addEdge("e3",v2,v3);
+    g.addEdge("e4",v4,v3);
+    g.addEdge("e5",v5,v2);
+
+    display::show(g);
+    std::cout &lt;&lt; "\n";
+
+    std::cout &lt;&lt; "\n  Making copy of instance";
+    std::cout &lt;&lt; "\n -------------------------";
+    graph gcopy = g;
+    display::show(gcopy);
+    std::cout &lt;&lt; "\n";
+
+    std::cout &lt;&lt; "\n  Modifying copy's values";
+    std::cout &lt;&lt; "\n -------------------------";
+    for(auto& v : gcopy)
+      v.value() += "copy";
+
+    display::show(gcopy);
+    std::cout &lt;&lt; "\n";
+
+    std::cout &lt;&lt; "\n  Assigning original instance to copy";
+    std::cout &lt;&lt; "\n -------------------------------------";
+    gcopy = g;
+    display::show(gcopy);
+    std::cout &lt;&lt; "\n";
+
+    std::cout &lt;&lt; "\n  Vertices with no Parents:";
+    std::cout &lt;&lt; "\n ---------------------------";
+
+    std::vector&lt; vertex &gt; verts = display::vertsWithNoParents(g);
+    std::cout &lt;&lt; "\n  ";
+    for(size_t i=0; i&lt;verts.size(); ++i)
+      std::cout &lt;&lt; verts[i].value().c_str() &lt;&lt; " ";
+    std::cout &lt;&lt; "\n";
+
+    std::cout &lt;&lt; "\n  Testing Depth First Search with function pointer";
+    std::cout &lt;&lt; "\n --------------------------------------------------";
+    for(auto& vert : g)
+<div onclick="toggle_visibility('id5', 'x5'); " id="x5">[-]</div><pre id="id5">    {
+      std::cout &lt;&lt; "\n  starting at id " &lt;&lt; vert.id();
+      g.dfs(vert, TshowVert&lt;std::string, std::string&gt;);
+      // this works too: 
+      // g.dfs(vert, showVert);
+    }</pre>
+    std::cout &lt;&lt; "\n";
+
+    std::cout &lt;&lt; "\n  Testing Depth First Search with Functor";
+    std::cout &lt;&lt; "\n -----------------------------------------";
+
+    class showFunctor
+<div onclick="toggle_visibility('id6', 'x6'); " id="x6">[-]</div><pre id="id6">    {
+    public:
+      void operator()(Vertex&lt;std::string, std::string&gt;& vert)
+<div onclick="toggle_visibility('id7', 'x7'); " id="x7">[-]</div><pre id="id7">      {
+        std::cout &lt;&lt; "\n  From functor: vertix id = " &lt;&lt; vert.id();
+        std::cout &lt;&lt; ", number of edges = " &lt;&lt; vert.size();
+      }</pre>
+    };</pre>
+
+    g.dfs(g[0], showFunctor());
+    std::cout &lt;&lt; "\n";
+
+    std::cout &lt;&lt; "\n  Testing Serialization to XML";
+    std::cout &lt;&lt; "\n ------------------------------";
+    std::string str = GraphToXmlString(g);
+    std::cout &lt;&lt; str &lt;&lt; "\n";
+    std::ofstream out("testGraph.xml");
+    out &lt;&lt; str &lt;&lt; "\n";
+
+    std::cout &lt;&lt; "\n  Testing Graph construction from XML";
+    std::cout &lt;&lt; "\n -------------------------------------";
+    graph gtest;
+    GraphFromXmlString(gtest, str);
+    display::show(gtest);
+    std::cout &lt;&lt; "\n\n";
+  }</pre>
+  catch(std::exception& ex)
+<div onclick="toggle_visibility('id8', 'x8'); " id="x8">[-]</div><pre id="id8">  {
+    std::cout &lt;&lt; "\n\n  " &lt;&lt; ex.what() &lt;&lt; "\n\n";
+  }</pre>
+  std::cout &lt;&lt; "\n\n";
+  system("pause");
+  return 0;
+}</pre>
+
+#endif
+    </pre>
+    <hr />
+  </body>
+</html>

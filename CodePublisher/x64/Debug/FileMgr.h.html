@@ -1,0 +1,217 @@
+<html>
+  <head>
+    <style>
+		body {
+			margin:20px; color:black; background-color:#eee;
+			font-family:Consolas; font-weight:600; font-size:110 % ;
+		}
+		.indent{ margin-left:20px; margin-right:20px; }
+		h4{ margin-bottom: 3px; margin-top:3px; }
+	</style>
+	<script type = "text/javascript">
+     function toggle_visibility(id, id2) {
+       var e = document.getElementById(id); 
+       var label = document.getElementById(id2); 
+       if (e.style.display == 'none') {
+         label.innerHTML = label.innerHTML.replace("[+] {...}", "[-]");
+         e.style.display = 'block'; 
+       }
+       else {
+         label.innerHTML = label.innerHTML.replace("[-]", "[+] {...}"); 
+         e.style.display = 'none'; 
+       }
+     }
+	</script>
+  </head>
+  <body>
+    <h3>FileMgr.h</h3>
+    <hr />
+    <div class="indent">
+      <h4>Dependencies:</h4>
+      <a href="AbstrSynTree.cpp.html">AbstrSynTree.cpp</a><br />
+      <a href="FileMgr.cpp.html">FileMgr.cpp</a><br />
+      <a href="FileSystem.h.html">FileSystem.h</a><br />
+      <a href="IFileMgr.h.html">IFileMgr.h</a><br />
+    </div>
+    <hr />
+    <pre>
+#ifndef FILEMGR_H
+#define FILEMGR_H
+/////////////////////////////////////////////////////////////////////
+// FileMgr.h - find files matching specified patterns              //
+//             on a specified path                                 //
+// ver 2.2                                                         //
+// Jim Fawcett, CSE687 - Object Oriented Design, Spring 2016       //
+/////////////////////////////////////////////////////////////////////
+/*
+* Package Operations:
+* -------------------
+* This package provides a class, FileMgr, and object factory function,
+* Create().  It's mission is to search the directory tree, rooted at
+* a specified path, looking for files that match a set of specified
+* patterns.
+*
+* It provides virtual functions file(...), dir(...), and done(), which
+* an application can override to provide application specific processing
+* for the events: file found, directory found, and finished processing.
+*
+* The package also provides interface hooks that serve the same purpose
+* but allow multiple receivers for those events.
+*
+* Required Files:
+* ---------------
+*   FileMgr.h, FileMgr.cpp, IFileMgr.h, 
+*   FileSystem.h, FileSystem.cpp
+*
+* Build Process:
+* --------------
+*   devenv FileMgr.sln /rebuild debug
+*
+* Maintenance History:
+* --------------------
+* ver 2.2 : 28 Aug 2016
+* - added more prologue comments
+* ver 2.1 : 31 Jul 2016
+* - added virtual file, dir, and done functions
+* - this lets application override instead of registering for event
+* ver 2.0 : 12 Mar 2016
+* - fixes bug in directory recursion in find(path)
+* - reduces scope of for loop in find for efficiency
+* ver 1.0 : 11 Mar 2016
+* - first release
+*/
+
+#include "IFileMgr.h"
+#include "../FileSystem/FileSystem.h"
+
+namespace FileManager
+<div onclick="toggle_visibility('id1', 'x1'); " id="x1">[-]</div><pre id="id1">{
+  class FileMgr : public IFileMgr
+<div onclick="toggle_visibility('id2', 'x2'); " id="x2">[-]</div><pre id="id2">  {
+  public:
+    using patterns = std::vector&lt;std::string&gt;;
+    using File = std::string;
+    using Dir = std::string;
+    using fileSubscribers = std::vector&lt;IFileEventHandler*&gt;;
+    using dirSubscribers = std::vector&lt;IDirEventHandler*&gt;;
+    using doneSubscribers = std::vector&lt;IDoneEventHandler*&gt;;
+
+    virtual ~FileMgr() {}
+
+    //----&lt; set default file pattern &gt;-------------------------------
+
+    FileMgr(const std::string& path) : path_(path)
+<div onclick="toggle_visibility('id3', 'x3'); " id="x3">[-]</div><pre id="id3">    {
+      patterns_.push_back("*.*");
+      pInstance_ = this;
+    }</pre>
+    //----&lt; return instance of FileMgr &gt;-----------------------------
+
+    static IFileMgr* getInstance()
+<div onclick="toggle_visibility('id4', 'x4'); " id="x4">[-]</div><pre id="id4">    {
+      return pInstance_;
+    }</pre>
+    //----&lt; add file pattern, removing default on first call &gt;-------
+
+    void addPattern(const std::string& patt)
+<div onclick="toggle_visibility('id5', 'x5'); " id="x5">[-]</div><pre id="id5">    {
+      if (patterns_.size() == 1 && patterns_[0] == "*.*")
+        patterns_.pop_back();
+      patterns_.push_back(patt);
+    }</pre>
+    //----&lt; applications can overload this or reg for fileEvt &gt;------
+
+    virtual void file(const File& f)
+<div onclick="toggle_visibility('id6', 'x6'); " id="x6">[-]</div><pre id="id6">    {
+      ++numFilesProcessed;
+      for (auto pEvtHandler : fileSubscribers_)
+<div onclick="toggle_visibility('id7', 'x7'); " id="x7">[-]</div><pre id="id7">      {
+        pEvtHandler-&gt;execute(f);
+      }</pre>
+    }</pre>
+    //----&lt; applications can overload this or reg for dirEvt &gt;-------
+
+    virtual void dir(const Dir& fpath)
+<div onclick="toggle_visibility('id8', 'x8'); " id="x8">[-]</div><pre id="id8">    {
+      for (auto pEvtHandler : dirSubscribers_)
+<div onclick="toggle_visibility('id9', 'x9'); " id="x9">[-]</div><pre id="id9">      {
+        pEvtHandler-&gt;execute(fpath);
+      }</pre>
+    }</pre>
+    //----&lt; applications can overload this or reg for doneEvt &gt;------
+
+    virtual void done()
+<div onclick="toggle_visibility('id10', 'x10'); " id="x10">[-]</div><pre id="id10">    {
+      for (auto pEvtHandler : doneSubscribers_)
+<div onclick="toggle_visibility('id11', 'x11'); " id="x11">[-]</div><pre id="id11">      {
+        pEvtHandler-&gt;execute(numFilesProcessed);
+      }</pre>
+    }</pre>
+    //----&lt; start search on previously specified path &gt;--------------
+
+    void search()
+<div onclick="toggle_visibility('id12', 'x12'); " id="x12">[-]</div><pre id="id12">    {
+      find(path_);
+      done();
+    }</pre>
+    //----&lt; search current path including subdirectories &gt;-----------
+
+    void find(const std::string& path)
+<div onclick="toggle_visibility('id13', 'x13'); " id="x13">[-]</div><pre id="id13">    {
+      std::string fpath = FileSystem::Path::getFullFileSpec(path);
+      dir(fpath);
+      for (auto patt : patterns_)
+<div onclick="toggle_visibility('id14', 'x14'); " id="x14">[-]</div><pre id="id14">      {
+        std::vector&lt;std::string&gt; files = FileSystem::Directory::getFiles(fpath, patt);
+        for (auto f : files)
+<div onclick="toggle_visibility('id15', 'x15'); " id="x15">[-]</div><pre id="id15">        {
+          file(f);
+        }</pre>
+      }</pre>
+      std::vector&lt;std::string&gt; dirs = FileSystem::Directory::getDirectories(fpath);
+      for (auto d : dirs)
+<div onclick="toggle_visibility('id16', 'x16'); " id="x16">[-]</div><pre id="id16">      {
+        if (d == "." || d == "..")
+          continue;
+        std::string dpath = fpath + "\\" + d;
+        find(dpath);
+      }</pre>
+    }</pre>
+    //----&lt; applications use this to register for notification &gt;-----
+
+    void regForFiles(IFileEventHandler* pHandler)
+<div onclick="toggle_visibility('id17', 'x17'); " id="x17">[-]</div><pre id="id17">    {
+      fileSubscribers_.push_back(pHandler);
+    }</pre>
+    //----&lt; applications use this to register for notification &gt;-----
+
+    void regForDirs(IDirEventHandler* pHandler)
+<div onclick="toggle_visibility('id18', 'x18'); " id="x18">[-]</div><pre id="id18">    {
+      dirSubscribers_.push_back(pHandler);
+    }</pre>
+    //----&lt; applications use this to register for notification &gt;-----
+
+    void regForDone(IDoneEventHandler* pHandler)
+<div onclick="toggle_visibility('id19', 'x19'); " id="x19">[-]</div><pre id="id19">    {
+      doneSubscribers_.push_back(pHandler);
+    }</pre>
+  private:
+    std::string path_;
+    patterns patterns_;
+    size_t numFilesProcessed = 0;
+    fileSubscribers fileSubscribers_;
+    dirSubscribers dirSubscribers_;
+    doneSubscribers doneSubscribers_;
+    static IFileMgr* pInstance_;
+  };</pre>
+
+  inline IFileMgr* FileMgrFactory::create(const std::string& path)
+<div onclick="toggle_visibility('id20', 'x20'); " id="x20">[-]</div><pre id="id20">  {
+    return new FileMgr(path);
+  }</pre>
+}</pre>
+#endif
+    </pre>
+    <hr />
+  </body>
+</html>

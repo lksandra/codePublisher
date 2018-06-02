@@ -1,0 +1,127 @@
+<html>
+  <head>
+    <style>
+		body {
+			margin:20px; color:black; background-color:#eee;
+			font-family:Consolas; font-weight:600; font-size:110 % ;
+		}
+		.indent{ margin-left:20px; margin-right:20px; }
+		h4{ margin-bottom: 3px; margin-top:3px; }
+	</style>
+	<script type = "text/javascript">
+     function toggle_visibility(id, id2) {
+       var e = document.getElementById(id); 
+       var label = document.getElementById(id2); 
+       if (e.style.display == 'none') {
+         label.innerHTML = label.innerHTML.replace("[+] {...}", "[-]");
+         e.style.display = 'block'; 
+       }
+       else {
+         label.innerHTML = label.innerHTML.replace("[-]", "[+] {...}"); 
+         e.style.display = 'none'; 
+       }
+     }
+	</script>
+  </head>
+  <body>
+    <h3>CopyOfUnitTest.h</h3>
+    <hr />
+    <div class="indent">
+      <h4>Dependencies:</h4>
+      <a href="AbstrSynTree.cpp.html">AbstrSynTree.cpp</a><br />
+      <a href="Cpp11-BlockingQueue.cpp.html">Cpp11-BlockingQueue.cpp</a><br />
+      <a href="FileSystem.cpp.html">FileSystem.cpp</a><br />
+      <a href="FileSystemTest.cpp.html">FileSystemTest.cpp</a><br />
+      <a href="GrammarHelpers.cpp.html">GrammarHelpers.cpp</a><br />
+      <a href="Test1.h.html">Test1.h</a><br />
+      <a href="UnitTest.cpp.html">UnitTest.cpp</a><br />
+      <a href="UnitTest.h.html">UnitTest.h</a><br />
+      <a href="Utilities.h.html">Utilities.h</a><br />
+    </div>
+    <hr />
+    <pre>
+#ifndef UNITTEST_H
+#define UNITTEST_H
+///////////////////////////////////////////////////////////////
+// UnitTest.cpp - Demonstrate unit testing framework         //
+// ver 1.1                                                   //
+// --------------------------------------------------------- //
+// copyright © Jim Fawcett, 2012, 2013                       //
+// All rights granted provided that this notice is retained  //
+// --------------------------------------------------------- //
+// Jim Fawcett, CSE687-Object Oriented Design, Spring 2013   //
+///////////////////////////////////////////////////////////////
+
+#include &lt;string&gt;
+#include &lt;iostream&gt;
+
+namespace Test
+<div onclick="toggle_visibility('id1', 'x1'); " id="x1">[-]</div><pre id="id1">{
+  void Title(const std::string& title, char ch='=')
+<div onclick="toggle_visibility('id2', 'x2'); " id="x2">[-]</div><pre id="id2">  {
+    std::cout &lt;&lt; "\n  " &lt;&lt; title;
+    std::cout &lt;&lt; "\n " &lt;&lt; std::string(title.size() + 2, ch);
+  }</pre>
+
+  template &lt;typename T&gt;
+  class TestBase
+<div onclick="toggle_visibility('id3', 'x3'); " id="x3">[-]</div><pre id="id3">  {
+  public:
+
+    typedef bool (T::*Test) ();
+
+    virtual ~TestBase() {}
+
+    // Your test driver implements this for each major test
+    // - call a sequence of doTest(TestN)s
+    //-----------------------------------------------------
+    virtual bool test()=0;
+
+    // Executes test functions inside a try block
+    //-------------------------------------------
+    bool doTest(Test atest) 
+<div onclick="toggle_visibility('id4', 'x4'); " id="x4">[-]</div><pre id="id4">    { 
+      try
+<div onclick="toggle_visibility('id5', 'x5'); " id="x5">[-]</div><pre id="id5">      {
+        return (dynamic_cast&lt;T*&gt;(this)-&gt;*atest)();
+      }</pre>
+      catch (std::exception& ex)
+<div onclick="toggle_visibility('id6', 'x6'); " id="x6">[-]</div><pre id="id6">      {
+        std::cout &lt;&lt; "\n  failed: " &lt;&lt; ex.what();
+        return false;
+      }</pre>
+      catch(...)
+<div onclick="toggle_visibility('id7', 'x7'); " id="x7">[-]</div><pre id="id7">      {
+        std::cout &lt;&lt; "\n  failed: thrown structured exception";
+        return false;
+      }</pre>
+    }</pre>
+    // Call this in your test functions to save duplicating output statements
+    //-----------------------------------------------------------------------
+    bool checkResult(bool predicate, std::string testname)
+<div onclick="toggle_visibility('id8', 'x8'); " id="x8">[-]</div><pre id="id8">    {
+      std::string name = std::string(typeid(*this).name()) + "::" + testname;
+      name = name.substr(6, name.size() - 6);
+      if(predicate)
+        return passed(name);
+      else
+        return failed(name);
+    }</pre>
+  protected:
+    bool passed(const std::string& name)
+<div onclick="toggle_visibility('id9', 'x9'); " id="x9">[-]</div><pre id="id9">    {
+      std::cout &lt;&lt; "\n  passed: " &lt;&lt; name;
+      return true;
+    }</pre>
+    bool failed(const std::string& name)
+<div onclick="toggle_visibility('id10', 'x10'); " id="x10">[-]</div><pre id="id10">    {
+      std::cout &lt;&lt; "\n  failed: " &lt;&lt; name;
+      return false;
+    }</pre>
+  };</pre>
+}</pre>
+#endif
+    </pre>
+    <hr />
+  </body>
+</html>

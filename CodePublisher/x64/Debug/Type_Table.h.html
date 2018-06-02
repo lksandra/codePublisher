@@ -1,0 +1,228 @@
+<html>
+  <head>
+    <style>
+		body {
+			margin:20px; color:black; background-color:#eee;
+			font-family:Consolas; font-weight:600; font-size:110 % ;
+		}
+		.indent{ margin-left:20px; margin-right:20px; }
+		h4{ margin-bottom: 3px; margin-top:3px; }
+	</style>
+	<script type = "text/javascript">
+     function toggle_visibility(id, id2) {
+       var e = document.getElementById(id); 
+       var label = document.getElementById(id2); 
+       if (e.style.display == 'none') {
+         label.innerHTML = label.innerHTML.replace("[+] {...}", "[-]");
+         e.style.display = 'block'; 
+       }
+       else {
+         label.innerHTML = label.innerHTML.replace("[-]", "[+] {...}"); 
+         e.style.display = 'none'; 
+       }
+     }
+	</script>
+  </head>
+  <body>
+    <h3>Type_Table.h</h3>
+    <hr />
+    <div class="indent">
+      <h4>Dependencies:</h4>
+      <a href="AbstrSynTree.cpp.html">AbstrSynTree.cpp</a><br />
+      <a href="AbstrSynTree.h.html">AbstrSynTree.h</a><br />
+      <a href="ActionsAndRules.h.html">ActionsAndRules.h</a><br />
+      <a href="ConfigureParser.h.html">ConfigureParser.h</a><br />
+      <a href="Dep_Anal.h.html">Dep_Anal.h</a><br />
+      <a href="Dep_Anal1.h.html">Dep_Anal1.h</a><br />
+      <a href="Dep_Table.h.html">Dep_Table.h</a><br />
+      <a href="Executive.h.html">Executive.h</a><br />
+      <a href="GrammarHelpers.h.html">GrammarHelpers.h</a><br />
+      <a href="Parser.h.html">Parser.h</a><br />
+      <a href="ScopeStack.h.html">ScopeStack.h</a><br />
+      <a href="Type_Analysis.h.html">Type_Analysis.h</a><br />
+      <a href="XmlWriter.cpp.html">XmlWriter.cpp</a><br />
+    </div>
+    <hr />
+    <pre>
+#pragma once
+#ifndef TYPETABLE_H
+#define TYPETABLE_H
+
+/////////////////////////////////////////////////////////////////////
+//	Project#2:		Type-based Dependency Analysis				   //
+//					To create a Type-based dependency analyzer	   //
+//																   //
+//	## Created by using Prof. Jim Fawcett's 'CodeAnalyzer'     ##  //
+//  ## project and augmenting it with 'Type Analysis',         ##  //
+//  ## 'Dependency Analysis' and 'Strong Components' features. ##  //
+//																   //
+//  Type_Table.h:   Header file to save and display Type Table     //
+//  *************************************************************  //
+//	Version:		1.0											   //
+//  Date:			03/14/2017									   //
+//  Language:       Visual C++, Version 11.						   //
+//  Platform:       Visual Studio Community Edition				   //
+//					HP ENVY, Windows 10				               //
+//  Application:    CSE687 - Object Oriented Design                //
+//  Author:         Sachin Basavani Shivashankara				   //
+//	SUID:			267871645									   //
+//  Ph:, email:     (315)751-5895, sbasavan@syr.edu				   //
+/////////////////////////////////////////////////////////////////////
+
+// Module Operations:
+// ==================
+// Contains a class (TypeInfo) that stores type information (Type, Type name, Namespace,
+// and path) necessary for dependency analysis.
+// Contains a class (TypeTable) that saves and displays Type Table.
+// 
+// Public Interface:
+// ==================
+// 		bool save(std::string typeName, TypeInfo val);		// To Save into TypeTable
+// 		void display();										// To Display TypeTable
+// 		void displayHeader();								// To display TypeTable header
+// 		map&lt;std::string, vector&lt;TypeInfo&gt;&gt;& returnTT();		// To return TypeTable
+// 
+// Required Files:
+// ===============
+// Type_Table.h, Type_Table.cpp
+
+#include &lt;iostream&gt;
+#include &lt;string&gt;
+#include &lt;vector&gt;
+#include &lt;map&gt;
+#include &lt;iomanip&gt; 
+#include &lt;sstream&gt;
+#include &lt;unordered_map&gt;
+#include &lt;functional&gt;
+#include &lt;algorithm&gt;
+#include &lt;exception&gt;
+#include &lt;chrono&gt;
+#include &lt;ctime&gt;
+
+#include "../Parser/Parser.h"
+#include "../FileSystem/FileSystem.h"
+#include "../FileMgr/FileMgr.h"
+#include "../Parser/ActionsAndRules.h"
+#include "../Parser/ConfigureParser.h"
+#include "../AbstractSyntaxTree/AbstrSynTree.h"
+#include "../Logger/Logger.h"
+#include "../Utilities/Utilities.h"
+#include "../Analyzer/Executive.h"
+
+namespace CodeAnalysis
+<div onclick="toggle_visibility('id1', 'x1'); " id="x1">[-]</div><pre id="id1">{
+	// Class to store Type Information
+	class TypeInfo                     
+<div onclick="toggle_visibility('id2', 'x2'); " id="x2">[-]</div><pre id="id2">	{
+	private:
+		std::string typeName;							// Name of the Type		
+		std::string typeValue;							// Type of the name
+		std::string typeNamespace;						// Namespace where Type is defined
+		std::string typeFileName;						// Filepath where Type if defined
+
+	public:
+		void setTypeName(std::string typeNam)			// Sets Typename
+<div onclick="toggle_visibility('id3', 'x3'); " id="x3">[-]</div><pre id="id3">		{
+			typeName = typeNam;
+		}</pre>
+		std::string getTypeName()						// Gets Typename
+<div onclick="toggle_visibility('id4', 'x4'); " id="x4">[-]</div><pre id="id4">		{
+			return typeName;
+		}</pre>
+		void setType(std::string typeVal)				// Sets Type 
+<div onclick="toggle_visibility('id5', 'x5'); " id="x5">[-]</div><pre id="id5">		{
+			typeValue = typeVal;
+		}</pre>
+		std::string getType()							// Gets Type 
+<div onclick="toggle_visibility('id6', 'x6'); " id="x6">[-]</div><pre id="id6">		{
+			return typeValue;
+		}</pre>
+		void setNamespace(std::string typeNamesp)		// Sets Namespace 
+<div onclick="toggle_visibility('id7', 'x7'); " id="x7">[-]</div><pre id="id7">		{
+			typeNamespace = typeNamesp;
+		}</pre>
+		std::string getNamespace()						// Gets Namespace 
+<div onclick="toggle_visibility('id8', 'x8'); " id="x8">[-]</div><pre id="id8">		{
+			return typeNamespace;
+		}</pre>
+		void setFilename(std::string typeFilenam)		// Sets Filename
+<div onclick="toggle_visibility('id9', 'x9'); " id="x9">[-]</div><pre id="id9">		{
+			typeFileName = typeFilenam;
+		}</pre>
+		std::string getFilename()						// Gets Filename 
+<div onclick="toggle_visibility('id10', 'x10'); " id="x10">[-]</div><pre id="id10">		{
+			return typeFileName;
+		}</pre>
+	};</pre>
+
+	// Class to save and display Type Table
+	class TypeTable
+<div onclick="toggle_visibility('id11', 'x11'); " id="x11">[-]</div><pre id="id11">	{
+	private:
+		std::map&lt;std::string, std::vector&lt;TypeInfo&gt;&gt; TTmap;			// TypeTable map
+	public:
+		bool save(std::string typeName, TypeInfo val);				// Save into TypeTable
+		void display();												// Display TypeTable
+		void displayHeader();										// Display TypeTable Header
+		std::map&lt;std::string, std::vector&lt;TypeInfo&gt;&gt;& returnTT();	// returns TypeTable
+	};</pre>
+
+	// Returns TypeTable
+	inline std::map&lt;std::string, std::vector&lt;TypeInfo&gt;&gt;& TypeTable::returnTT()
+<div onclick="toggle_visibility('id12', 'x12'); " id="x12">[-]</div><pre id="id12">	{
+		return TTmap;
+	}</pre>
+
+	// Saves into TypeTable
+	inline bool TypeTable::save(std::string typeName, TypeInfo val)
+<div onclick="toggle_visibility('id13', 'x13'); " id="x13">[-]</div><pre id="id13">	{
+		TTmap[typeName].push_back(val);
+
+		return true;
+	}</pre>
+
+	// Displays TypeTable Header
+	inline void TypeTable::displayHeader()
+<div onclick="toggle_visibility('id14', 'x14'); " id="x14">[-]</div><pre id="id14">	{
+		std::cout &lt;&lt; "\n";
+		std::cout &lt;&lt; std::right;
+		std::cout &lt;&lt; "\n" &lt;&lt; "##########################################################################################";
+		std::cout &lt;&lt; "\n" &lt;&lt; "                                 --TYPE TABLE--									   ";
+		std::cout &lt;&lt; "\n" &lt;&lt; "##########################################################################################";
+		std::cout &lt;&lt; "\n ";
+		std::cout &lt;&lt; std::setw(25) &lt;&lt; "Type name";
+		std::cout &lt;&lt; std::setw(25) &lt;&lt; "Type";
+		std::cout &lt;&lt; std::setw(25) &lt;&lt; "Namespace";
+		std::cout &lt;&lt; std::setw(25) &lt;&lt; "Filename";
+		std::cout &lt;&lt; std::right;
+		std::cout &lt;&lt; "\n  ";
+		std::cout &lt;&lt; std::setw(25) &lt;&lt; "-------------------";
+		std::cout &lt;&lt; std::setw(25) &lt;&lt; "-------------------";
+		std::cout &lt;&lt; std::setw(25) &lt;&lt; "-------------------";
+		std::cout &lt;&lt; std::setw(25) &lt;&lt; "-------------------";
+	}</pre>
+	// Displays TypeTable
+	inline void TypeTable::display()
+<div onclick="toggle_visibility('id15', 'x15'); " id="x15">[-]</div><pre id="id15">	{
+		TypeTable::displayHeader();
+		std::cout &lt;&lt; "\n ";
+		std::map&lt;std::string, std::vector&lt;TypeInfo&gt;&gt;::iterator it = TTmap.begin();
+		for (it; it != TTmap.end(); ++it)
+<div onclick="toggle_visibility('id16', 'x16'); " id="x16">[-]</div><pre id="id16">		{
+			std::cout &lt;&lt; std::right;
+			for (TypeInfo val : it-&gt;second)
+<div onclick="toggle_visibility('id17', 'x17'); " id="x17">[-]</div><pre id="id17">			{
+				std::cout &lt;&lt; std::setw(25) &lt;&lt; it-&gt;first;
+				std::cout &lt;&lt; std::setw(25) &lt;&lt; val.getType();
+				std::cout &lt;&lt; std::setw(25) &lt;&lt; val.getNamespace();
+				std::cout &lt;&lt; "\t\t" &lt;&lt; std::setw(50) &lt;&lt; val.getFilename();
+				std::cout &lt;&lt; "\n ";
+			}</pre>
+		}</pre>
+	}</pre>
+}</pre>
+#endif
+    </pre>
+    <hr />
+  </body>
+</html>

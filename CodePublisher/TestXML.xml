@@ -1,0 +1,74 @@
+<results>
+<!-- Dependency Analysis Result -->
+
+<Results_of_Dependency_Analysis>
+  <vertex id="0" value="Graph.cpp">
+    <edge targetId="1" value="Graph.h">
+    </edge>
+  </vertex>
+  <vertex id="1" value="Graph.h">
+    <edge targetId="2" value="XmlReader.cpp">
+    </edge>
+    <edge targetId="3" value="XmlReader.h">
+    </edge>
+    <edge targetId="4" value="XmlWriter.cpp">
+    </edge>
+    <edge targetId="5" value="XmlWriter.h">
+    </edge>
+  </vertex>
+  <vertex id="2" value="XmlReader.cpp">
+    <edge targetId="3" value="XmlReader.h">
+    </edge>
+    <edge targetId="4" value="XmlWriter.cpp">
+    </edge>
+    <edge targetId="5" value="XmlWriter.h">
+    </edge>
+  </vertex>
+  <vertex id="3" value="XmlReader.h">
+    <edge targetId="2" value="XmlReader.cpp">
+    </edge>
+    <edge targetId="4" value="XmlWriter.cpp">
+    </edge>
+    <edge targetId="5" value="XmlWriter.h">
+    </edge>
+  </vertex>
+  <vertex id="4" value="XmlWriter.cpp">
+    <edge targetId="2" value="XmlReader.cpp">
+    </edge>
+    <edge targetId="3" value="XmlReader.h">
+    </edge>
+    <edge targetId="5" value="XmlWriter.h">
+    </edge>
+  </vertex>
+  <vertex id="5" value="XmlWriter.h">
+    <edge targetId="2" value="XmlReader.cpp">
+    </edge>
+    <edge targetId="3" value="XmlReader.h">
+    </edge>
+    <edge targetId="4" value="XmlWriter.cpp">
+    </edge>
+  </vertex>
+</Results_of_Dependency_Analysis>
+<!-- Strongly Connected Components -->
+
+<Results_of_SCC>
+  <SCC_Nodes id="0" value="0">
+    <file name="XmlWriter.h">
+    </file>
+    <file name="XmlWriter.cpp">
+    </file>
+    <file name="XmlReader.h">
+    </file>
+    <file name="XmlReader.cpp">
+    </file>
+  </SCC_Nodes>
+  <SCC_Nodes id="1" value="1">
+    <file name="Graph.h">
+    </file>
+  </SCC_Nodes>
+  <SCC_Nodes id="2" value="2">
+    <file name="Graph.cpp">
+    </file>
+  </SCC_Nodes>
+</Results_of_SCC>
+</results>

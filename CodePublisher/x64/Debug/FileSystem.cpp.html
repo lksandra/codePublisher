@@ -1,0 +1,1253 @@
+<html>
+  <head>
+    <style>
+		body {
+			margin:20px; color:black; background-color:#eee;
+			font-family:Consolas; font-weight:600; font-size:110 % ;
+		}
+		.indent{ margin-left:20px; margin-right:20px; }
+		h4{ margin-bottom: 3px; margin-top:3px; }
+	</style>
+	<script type = "text/javascript">
+     function toggle_visibility(id, id2) {
+       var e = document.getElementById(id); 
+       var label = document.getElementById(id2); 
+       if (e.style.display == 'none') {
+         label.innerHTML = label.innerHTML.replace("[+] {...}", "[-]");
+         e.style.display = 'block'; 
+       }
+       else {
+         label.innerHTML = label.innerHTML.replace("[-]", "[+] {...}"); 
+         e.style.display = 'none'; 
+       }
+     }
+	</script>
+  </head>
+  <body>
+    <h3>FileSystem.cpp</h3>
+    <hr />
+    <div class="indent">
+      <h4>Dependencies:</h4>
+      <a href="AbstrSynTree.cpp.html">AbstrSynTree.cpp</a><br />
+      <a href="Cpp11-BlockingQueue.cpp.html">Cpp11-BlockingQueue.cpp</a><br />
+      <a href="FileSystem.h.html">FileSystem.h</a><br />
+      <a href="FileSystemTest.cpp.html">FileSystemTest.cpp</a><br />
+      <a href="GrammarHelpers.cpp.html">GrammarHelpers.cpp</a><br />
+      <a href="UnitTest.cpp.html">UnitTest.cpp</a><br />
+      <a href="Utilities.h.html">Utilities.h</a><br />
+      <a href="XmlWriter.cpp.html">XmlWriter.cpp</a><br />
+      <a href="XmlWriter.h.html">XmlWriter.h</a><br />
+    </div>
+    <hr />
+    <pre>
+/////////////////////////////////////////////////////////////////////////////
+// FileSystem.cpp - Support file and directory operations                  //
+// ver 2.6                                                                 //
+// ----------------------------------------------------------------------- //
+// copyright © Jim Fawcett, 2012                                           //
+// All rights granted provided that this notice is retained                //
+// ----------------------------------------------------------------------- //
+// Language:    Visual C++, Visual Studio 2010                             //
+// Platform:    Dell XPS 8300, Core i7, Windows 7 SP1                      //
+// Application: Summer Projects, 2012                                      //
+// Author:      Jim Fawcett, CST 4-187, Syracuse University                //
+//              (315) 443-3948, jfawcett@twcny.rr.com                      //
+/////////////////////////////////////////////////////////////////////////////
+
+#include &lt;iostream&gt;
+#include &lt;string&gt;
+#include &lt;sstream&gt;
+#include &lt;iomanip&gt;
+#include &lt;utility&gt;
+#include &lt;clocale&gt;
+#include &lt;locale&gt;
+#include "FileSystem.h"
+
+using namespace FileSystem;
+
+/////////////////////////////////////////////////////////
+// helper FileSystemSearch
+
+class FileSystemSearch
+<div onclick="toggle_visibility('id1', 'x1'); " id="x1">[-]</div><pre id="id1">{
+public:
+  FileSystemSearch();
+  ~FileSystemSearch();
+  std::string firstFile(const std::string& path=".", const std::string& pattern="*.*");
+  std::string nextFile();
+  std::string firstDirectory(const std::string& path=".", const std::string& pattern="*.*");
+  std::string nextDirectory();
+  void close();
+private:
+  HANDLE hFindFile;
+  WIN32_FIND_DATAA FindFileData;
+  WIN32_FIND_DATAA* pFindFileData;
+};</pre>
+
+FileSystemSearch::FileSystemSearch() : pFindFileData(&FindFileData) {}
+FileSystemSearch::~FileSystemSearch() { ::FindClose(hFindFile); }
+void FileSystemSearch::close() { ::FindClose(hFindFile); }
+
+//----&lt; block constructor taking array iterators &gt;-------------------------
+
+Block::Block(Byte* beg, Byte* end) : bytes_(beg, end) {}
+
+//----&lt; push back block byte &gt;---------------------------------------------
+
+void Block::push_back(Byte b)
+<div onclick="toggle_visibility('id2', 'x2'); " id="x2">[-]</div><pre id="id2">{
+  bytes_.push_back(b);
+}</pre>
+//----&lt; non-const indexer &gt;------------------------------------------------
+
+Byte& Block::operator[](size_t i)
+<div onclick="toggle_visibility('id3', 'x3'); " id="x3">[-]</div><pre id="id3">{
+  if(i&lt;0 || bytes_.size() &lt;= i)
+    throw std::runtime_error("index out of range in Block");
+  return bytes_[i];
+}</pre>
+//----&lt; const indexer &gt;----------------------------------------------------
+
+Byte Block::operator[](size_t i) const
+<div onclick="toggle_visibility('id4', 'x4'); " id="x4">[-]</div><pre id="id4">{
+  if(i&lt;0 || bytes_.size() &lt;= i)
+    throw std::runtime_error("index out of range in Block");
+  return bytes_[i];
+}</pre>
+//----&lt; equality comparison &gt;----------------------------------------------
+
+bool Block::operator==(const Block& block) const
+<div onclick="toggle_visibility('id5', 'x5'); " id="x5">[-]</div><pre id="id5">{
+  return bytes_ == block.bytes_;
+}</pre>
+//----&lt; inequality comparison &gt;--------------------------------------------
+
+bool Block::operator!=(const Block& block) const
+<div onclick="toggle_visibility('id6', 'x6'); " id="x6">[-]</div><pre id="id6">{
+  return bytes_ != block.bytes_;
+}</pre>
+//----&lt; return number of bytes in block &gt;----------------------------------
+
+size_t Block::size() const
+<div onclick="toggle_visibility('id7', 'x7'); " id="x7">[-]</div><pre id="id7">{
+  return bytes_.size();
+}</pre>
+
+//----&lt; File constructor opens file stream &gt;-------------------------------
+
+File::File(const std::string& filespec) 
+    : name_(filespec), pIStream(nullptr), pOStream(nullptr), dirn_(in), typ_(text), good_(true)
+<div onclick="toggle_visibility('id8', 'x8'); " id="x8">[-]</div><pre id="id8">{
+}</pre>
+//----&lt; File destructor closes file stream &gt;-------------------------------
+
+File::~File() 
+<div onclick="toggle_visibility('id9', 'x9'); " id="x9">[-]</div><pre id="id9">{ 
+  if(pIStream)
+<div onclick="toggle_visibility('id10', 'x10'); " id="x10">[-]</div><pre id="id10">  {
+    pIStream-&gt;close(); 
+    delete pIStream;
+    pIStream = nullptr;
+    good_ = false;
+  }</pre>
+  if(pOStream)
+<div onclick="toggle_visibility('id11', 'x11'); " id="x11">[-]</div><pre id="id11">  {
+    pOStream-&gt;close();
+    delete pOStream; 
+    pOStream = nullptr;
+    good_ = false;
+  }</pre>
+}</pre>
+//----&lt; open for reading or writing &gt;--------------------------------------
+
+bool File::open(direction dirn, type typ)
+<div onclick="toggle_visibility('id12', 'x12'); " id="x12">[-]</div><pre id="id12">{
+  dirn_ = dirn;
+  typ_ = typ;
+  good_ = true;
+  if(dirn == in)
+<div onclick="toggle_visibility('id13', 'x13'); " id="x13">[-]</div><pre id="id13">  {
+    pIStream = new std::ifstream;
+    if(typ == binary)
+      pIStream-&gt;open(name_.c_str(), std::ios::in | std::ios::binary);
+    else
+      pIStream-&gt;open(name_.c_str(), std::ios::in);
+    if (!(*pIStream).good())
+<div onclick="toggle_visibility('id14', 'x14'); " id="x14">[-]</div><pre id="id14">    {
+      good_ = false;
+      pIStream = nullptr;
+      //throw std::runtime_error("\n  open for input failed in File constructor");
+    }</pre>
+  }</pre>
+  else
+<div onclick="toggle_visibility('id15', 'x15'); " id="x15">[-]</div><pre id="id15">  {
+    pOStream = new std::ofstream;
+    if(typ == binary)
+      pOStream-&gt;open(name_.c_str(), std::ios::out | std::ios::binary);
+    else
+      pOStream-&gt;open(name_.c_str(), std::ios::out);
+    if (!(*pOStream).good())
+<div onclick="toggle_visibility('id16', 'x16'); " id="x16">[-]</div><pre id="id16">    {
+      good_ = false;
+      pOStream = nullptr;
+      //throw std::runtime_error("\n  open for output failed in File constructor");
+    }</pre>
+  }</pre>
+  return good_;
+}</pre>
+//----&lt; reads one line of a text file &gt;------------------------------------
+
+std::string File::getLine(bool keepNewLines)
+<div onclick="toggle_visibility('id17', 'x17'); " id="x17">[-]</div><pre id="id17">{
+  if(pIStream == nullptr || !pIStream-&gt;good())
+    throw std::runtime_error("input stream not open");
+  if(typ_ == binary)
+    throw std::runtime_error("getting text line from binary file");
+  if(dirn_ == out)
+    throw std::runtime_error("reading output file");
+
+  std::string store;
+  while (true)
+<div onclick="toggle_visibility('id18', 'x18'); " id="x18">[-]</div><pre id="id18">  {
+    char ch = pIStream-&gt;get();
+    if (!isGood())
+      return store;
+    if (ch == '\n')
+<div onclick="toggle_visibility('id19', 'x19'); " id="x19">[-]</div><pre id="id19">    {
+      if (keepNewLines)
+        store += ch;
+      return store;
+    }</pre>
+    store += ch;
+  }</pre>
+}</pre>
+//----&lt; read all lines of text file into one string &gt;----------------------
+
+std::string File::readAll(bool keepNewLines)
+<div onclick="toggle_visibility('id20', 'x20'); " id="x20">[-]</div><pre id="id20">{
+  std::string store;
+  while (true)
+<div onclick="toggle_visibility('id21', 'x21'); " id="x21">[-]</div><pre id="id21">  {
+    if (!isGood())
+      return store;
+    store += getLine(keepNewLines);
+    std::locale loc;
+    if (store.size() &gt; 0 && !std::isspace(store[store.size() - 1], loc))
+      store += ' ';
+  }</pre>
+  return store;
+}</pre>
+//----&lt; writes one line of a text to a file &gt;------------------------------
+
+void File::putLine(const std::string& s, bool wantReturn)
+<div onclick="toggle_visibility('id22', 'x22'); " id="x22">[-]</div><pre id="id22">{
+  if(pOStream == nullptr || !pOStream-&gt;good())
+    throw std::runtime_error("output stream not open");
+  if(typ_ == binary)
+    throw std::runtime_error("writing text line to binary file");
+  if(dirn_ == in)
+    throw std::runtime_error("writing input file");
+  for(size_t i=0; i&lt;s.size(); ++i)
+    pOStream-&gt;put(s[i]);
+  if(wantReturn)
+    pOStream-&gt;put('\n');
+  pOStream-&gt;flush();
+}</pre>
+//----&lt; reads a block of bytes from binary file &gt;--------------------------
+
+Block File::getBlock(size_t size)
+<div onclick="toggle_visibility('id23', 'x23'); " id="x23">[-]</div><pre id="id23">{
+  if(pIStream == nullptr || !pIStream-&gt;good())
+    throw std::runtime_error("input stream not open");
+  if(typ_ != binary)
+    throw std::runtime_error("reading binary from text file");
+  if(dirn_ == out)
+    throw std::runtime_error("reading output file");
+  Block blk;
+  if(pIStream)
+<div onclick="toggle_visibility('id24', 'x24'); " id="x24">[-]</div><pre id="id24">  {
+    for(size_t i=0; i&lt;size; ++i)
+<div onclick="toggle_visibility('id25', 'x25'); " id="x25">[-]</div><pre id="id25">    {
+      Byte b;
+      pIStream-&gt;get(b);
+      if(pIStream-&gt;good())
+        blk.push_back(b);
+      else
+        break;
+    }</pre>
+  }</pre>
+  return blk;
+}</pre>
+//----&lt; writes a block of bytes to binary file &gt;---------------------------
+
+void File::putBlock(const Block& blk)
+<div onclick="toggle_visibility('id26', 'x26'); " id="x26">[-]</div><pre id="id26">{
+  if(pOStream == nullptr || !pOStream-&gt;good())
+    throw std::runtime_error("output stream not open");
+  if(typ_ != binary)
+    throw std::runtime_error("writing binary to text file");
+  if(dirn_ == in)
+    throw std::runtime_error("writing input file");
+  if(!pOStream-&gt;good())
+    return;
+  for(size_t i=0; i&lt;blk.size(); ++i)
+<div onclick="toggle_visibility('id27', 'x27'); " id="x27">[-]</div><pre id="id27">  {
+    pOStream-&gt;put(blk[i]);
+  }</pre>
+}</pre>
+//----&lt; read buffer of bytes from binary file &gt;----------------------------
+
+size_t File::getBuffer(size_t bufLen, File::byte* buffer)
+<div onclick="toggle_visibility('id28', 'x28'); " id="x28">[-]</div><pre id="id28">{
+  if (pIStream == nullptr || !pIStream-&gt;good())
+    throw std::runtime_error("input stream not open");
+  if (typ_ != binary)
+    throw std::runtime_error("reading binary from text file");
+  if (dirn_ == out)
+    throw std::runtime_error("reading output file");
+  size_t count = 0;
+  while (pIStream-&gt;good())
+<div onclick="toggle_visibility('id29', 'x29'); " id="x29">[-]</div><pre id="id29">  {
+    buffer[count++] = pIStream-&gt;get();
+      if (count == bufLen)
+        break;
+  }</pre>
+  if (!pIStream-&gt;good())  // don't write EOF char
+    --count;
+  return count;
+}</pre>
+//----&lt; write buffer of bytes to binary file &gt;-------------------------------
+
+void File::putBuffer(size_t bufLen, File::byte* buffer)
+<div onclick="toggle_visibility('id30', 'x30'); " id="x30">[-]</div><pre id="id30">{
+  if (pOStream == nullptr || !pOStream-&gt;good())
+    throw std::runtime_error("output stream not open");
+  if (typ_ != binary)
+    throw std::runtime_error("writing binary to text file");
+  if (dirn_ == in)
+    throw std::runtime_error("writing input file");
+  if (!pOStream-&gt;good())
+    return;
+  size_t count = 0;
+  while(pOStream-&gt;good())
+<div onclick="toggle_visibility('id31', 'x31'); " id="x31">[-]</div><pre id="id31">  {
+    pOStream-&gt;put(buffer[count++]);
+    if (count == bufLen)
+      break;
+  }</pre>
+}</pre>
+//----&lt; tests for error free stream state &gt;--------------------------------
+
+bool File::isGood()
+<div onclick="toggle_visibility('id32', 'x32'); " id="x32">[-]</div><pre id="id32">{
+  if(!good_)
+    return false;
+  if(pIStream != nullptr)
+    return (good_ = pIStream-&gt;good());
+  if(pOStream != nullptr)
+    return (good_ = pOStream-&gt;good());
+  return (good_ = false);
+}</pre>
+//----&lt; flushes output stream to its file &gt;--------------------------------
+
+void File::flush()
+<div onclick="toggle_visibility('id33', 'x33'); " id="x33">[-]</div><pre id="id33">{
+  if(pOStream != nullptr && pOStream-&gt;good())
+    pOStream-&gt;flush();
+}</pre>
+//----&lt; clears error state enabling operations again &gt;---------------------
+
+void File::clear()
+<div onclick="toggle_visibility('id34', 'x34'); " id="x34">[-]</div><pre id="id34">{
+  if(pIStream != nullptr)
+    pIStream-&gt;clear();
+  if(pOStream != nullptr)
+    pOStream-&gt;clear();
+}</pre>
+//----&lt; close file handle &gt;------------------------------------------------
+
+void File::close()
+<div onclick="toggle_visibility('id35', 'x35'); " id="x35">[-]</div><pre id="id35">{
+  File::flush();
+  if (pIStream != nullptr)
+<div onclick="toggle_visibility('id36', 'x36'); " id="x36">[-]</div><pre id="id36">  {
+    pIStream-&gt;close();
+    pIStream = nullptr;
+    good_ = false;
+  }</pre>
+  if (pOStream)
+<div onclick="toggle_visibility('id37', 'x37'); " id="x37">[-]</div><pre id="id37">  {
+    pOStream-&gt;close();
+    pOStream = nullptr;
+    good_ = false;
+  }</pre>
+}</pre>
+//----&lt; file exists &gt;--------------------------------------------------
+
+bool File::exists(const std::string& file)
+<div onclick="toggle_visibility('id38', 'x38'); " id="x38">[-]</div><pre id="id38">{
+  return ::GetFileAttributesA(file.c_str()) != INVALID_FILE_ATTRIBUTES;
+}</pre>
+//----&lt; copy file &gt;----------------------------------------------------
+
+bool File::copy(const std::string& src, const std::string& dst, bool failIfExists)
+<div onclick="toggle_visibility('id39', 'x39'); " id="x39">[-]</div><pre id="id39">{
+  return ::CopyFileA(src.c_str(), dst.c_str(), failIfExists) != 0;
+}</pre>
+//----&lt; remove file &gt;--------------------------------------------------
+
+bool File::remove(const std::string& file)
+<div onclick="toggle_visibility('id40', 'x40'); " id="x40">[-]</div><pre id="id40">{
+  return ::DeleteFileA(file.c_str()) != 0;
+}</pre>
+//----&lt; constructor &gt;--------------------------------------------------
+
+FileInfo::FileInfo(const std::string& fileSpec)
+<div onclick="toggle_visibility('id41', 'x41'); " id="x41">[-]</div><pre id="id41">{
+  HANDLE hFile = ::FindFirstFileA(fileSpec.c_str(), &data);
+  if(hFile == INVALID_HANDLE_VALUE)
+    good_ = false;
+  else
+    good_ = true;
+}</pre>
+//----&lt; is passed filespec valid? &gt;------------------------------------
+
+bool FileInfo::good()
+<div onclick="toggle_visibility('id42', 'x42'); " id="x42">[-]</div><pre id="id42">{
+  return good_;
+}</pre>
+//----&lt; return file name &gt;---------------------------------------------
+
+std::string FileInfo::name() const
+<div onclick="toggle_visibility('id43', 'x43'); " id="x43">[-]</div><pre id="id43">{
+  return Path::getName(data.cFileName);
+}</pre>
+//----&lt; conversion helper &gt;--------------------------------------------
+
+std::string FileInfo::intToString(long i)
+<div onclick="toggle_visibility('id44', 'x44'); " id="x44">[-]</div><pre id="id44">{
+  std::ostringstream out;
+  out.fill('0');
+  out &lt;&lt; std::setw(2) &lt;&lt; i;
+  return out.str();
+}</pre>
+//----&lt; return file date &gt;---------------------------------------------
+
+std::string FileInfo::date(dateFormat df) const
+<div onclick="toggle_visibility('id45', 'x45'); " id="x45">[-]</div><pre id="id45">{
+  std::string dateStr, timeStr;
+  FILETIME ft;
+  SYSTEMTIME st;
+  ::FileTimeToLocalFileTime(&data.ftLastWriteTime, &ft);
+  ::FileTimeToSystemTime(&ft, &st);
+  dateStr = intToString(st.wMonth) + '/' + intToString(st.wDay) + '/' + intToString(st.wYear);
+  timeStr = intToString(st.wHour) + ':' + intToString(st.wMinute) + ':' + intToString(st.wSecond);
+  if(df == dateformat)
+    return dateStr;
+  if(df == timeformat)
+    return timeStr;
+  return dateStr + " " + timeStr;
+}</pre>
+//----&lt; return file size &gt;---------------------------------------------
+
+size_t FileInfo::size() const
+<div onclick="toggle_visibility('id46', 'x46'); " id="x46">[-]</div><pre id="id46">{
+  return (size_t)(data.nFileSizeLow + (data.nFileSizeHigh &lt;&lt; 8));
+}</pre>
+//----&lt; is type archive? &gt;---------------------------------------------
+
+bool FileInfo::isArchive() const
+<div onclick="toggle_visibility('id47', 'x47'); " id="x47">[-]</div><pre id="id47">{
+  return (data.dwFileAttributes & FILE_ATTRIBUTE_ARCHIVE) != 0;
+}</pre>
+//----&lt; is type compressed? &gt;------------------------------------------
+
+bool FileInfo::isCompressed() const
+<div onclick="toggle_visibility('id48', 'x48'); " id="x48">[-]</div><pre id="id48">{
+  return (data.dwFileAttributes & FILE_ATTRIBUTE_COMPRESSED) != 0;
+}</pre>
+//----&lt; is type directory? &gt;-------------------------------------------
+
+bool FileInfo::isDirectory() const
+<div onclick="toggle_visibility('id49', 'x49'); " id="x49">[-]</div><pre id="id49">{
+  return (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
+}</pre>
+//----&lt; is type encrypted? &gt;---------------------------------------------
+
+bool FileInfo::isEncrypted() const
+<div onclick="toggle_visibility('id50', 'x50'); " id="x50">[-]</div><pre id="id50">{
+  return (data.dwFileAttributes & FILE_ATTRIBUTE_ENCRYPTED) != 0;
+}</pre>
+//----&lt; is type hiddent? &gt;---------------------------------------------
+
+bool FileInfo::isHidden() const
+<div onclick="toggle_visibility('id51', 'x51'); " id="x51">[-]</div><pre id="id51">{
+  return (data.dwFileAttributes & FILE_ATTRIBUTE_HIDDEN) != 0;
+}</pre>
+//----&lt; is type normal? &gt;---------------------------------------------
+
+bool FileInfo::isNormal() const
+<div onclick="toggle_visibility('id52', 'x52'); " id="x52">[-]</div><pre id="id52">{
+  return (data.dwFileAttributes & FILE_ATTRIBUTE_NORMAL) != 0;
+}</pre>
+//----&lt; is type offline? &gt;---------------------------------------------
+
+bool FileInfo::isOffLine() const
+<div onclick="toggle_visibility('id53', 'x53'); " id="x53">[-]</div><pre id="id53">{
+  return (data.dwFileAttributes & FILE_ATTRIBUTE_OFFLINE) != 0;
+}</pre>
+//----&lt; is type readonly? &gt;--------------------------------------------
+
+bool FileInfo::isReadOnly() const
+<div onclick="toggle_visibility('id54', 'x54'); " id="x54">[-]</div><pre id="id54">{
+  return (data.dwFileAttributes & FILE_ATTRIBUTE_READONLY) != 0;
+}</pre>
+//----&lt; is type system? &gt;----------------------------------------------
+
+bool FileInfo::isSystem() const
+<div onclick="toggle_visibility('id55', 'x55'); " id="x55">[-]</div><pre id="id55">{
+  return (data.dwFileAttributes & FILE_ATTRIBUTE_SYSTEM  ) != 0;
+}</pre>
+//----&lt; is type temporary? &gt;-------------------------------------------
+
+bool FileInfo::isTemporary() const
+<div onclick="toggle_visibility('id56', 'x56'); " id="x56">[-]</div><pre id="id56">{
+  return (data.dwFileAttributes & FILE_ATTRIBUTE_TEMPORARY) != 0;
+}</pre>
+//----&lt; compare names alphabetically &gt;---------------------------------
+
+bool FileInfo::operator&lt;(const FileInfo& fi) const
+<div onclick="toggle_visibility('id57', 'x57'); " id="x57">[-]</div><pre id="id57">{
+  return strcmp(data.cFileName, fi.data.cFileName) == -1;
+}</pre>
+//----&lt; compare names alphabetically &gt;---------------------------------
+
+bool FileInfo::operator==(const FileInfo& fi) const
+<div onclick="toggle_visibility('id58', 'x58'); " id="x58">[-]</div><pre id="id58">{
+  return strcmp(data.cFileName, fi.data.cFileName) == 0;
+}</pre>
+//----&lt; compare names alphabetically &gt;---------------------------------
+
+bool FileInfo::operator&gt;(const FileInfo& fi) const
+<div onclick="toggle_visibility('id59', 'x59'); " id="x59">[-]</div><pre id="id59">{
+  return strcmp(data.cFileName, fi.data.cFileName) == 1;
+}</pre>
+//----&lt; compare file times &gt;-------------------------------------------
+
+bool FileInfo::earlier(const FileInfo& fi) const
+<div onclick="toggle_visibility('id60', 'x60'); " id="x60">[-]</div><pre id="id60">{
+  FILETIME ft1 = data.ftLastWriteTime;
+  FILETIME ft2 = fi.data.ftLastWriteTime;
+  return ::CompareFileTime(&ft1, &ft2) == -1;
+}</pre>
+//----&lt; compare file times &gt;-------------------------------------------
+
+bool FileInfo::later(const FileInfo& fi) const
+<div onclick="toggle_visibility('id61', 'x61'); " id="x61">[-]</div><pre id="id61">{
+  FILETIME ft1 = data.ftLastWriteTime;
+  FILETIME ft2 = fi.data.ftLastWriteTime;
+  return ::CompareFileTime(&ft1, &ft2) == 1;
+}</pre>
+//----&lt; smaller &gt;------------------------------------------------------
+
+bool FileInfo::smaller(const FileInfo &fi) const
+<div onclick="toggle_visibility('id62', 'x62'); " id="x62">[-]</div><pre id="id62">{
+  return size() &lt; fi.size();
+}</pre>
+//----&lt; larger &gt;-------------------------------------------------------
+
+bool FileInfo::larger(const FileInfo &fi) const
+<div onclick="toggle_visibility('id63', 'x63'); " id="x63">[-]</div><pre id="id63">{
+  return size() &gt; fi.size();
+}</pre>
+//----&lt; convert string to lower case chars &gt;---------------------------
+
+std::string Path::toLower(const std::string& src)
+<div onclick="toggle_visibility('id64', 'x64'); " id="x64">[-]</div><pre id="id64">{
+  std::string temp;
+  for(size_t i=0; i&lt;src.length(); ++i)
+    temp += tolower(src[i]);
+  return temp;
+}</pre>
+//----&lt; convert string to upper case chars &gt;---------------------------
+
+  
+std::string Path::toUpper(const std::string& src)
+<div onclick="toggle_visibility('id65', 'x65'); " id="x65">[-]</div><pre id="id65">{
+  std::string temp;
+  for(size_t i=0; i&lt;src.length(); ++i)
+    temp += toupper(src[i]);
+  return temp;
+}</pre>
+//----&lt; get path from fileSpec &gt;---------------------------------------
+
+std::string Path::getName(const std::string &fileSpec, bool withExt)
+<div onclick="toggle_visibility('id66', 'x66'); " id="x66">[-]</div><pre id="id66">{
+  size_t pos = fileSpec.find_last_of("/");
+  if(pos &gt;= fileSpec.length())
+<div onclick="toggle_visibility('id67', 'x67'); " id="x67">[-]</div><pre id="id67">  {
+    pos = fileSpec.find_last_of("\\");
+    if(pos &gt;= fileSpec.length())
+<div onclick="toggle_visibility('id68', 'x68'); " id="x68">[-]</div><pre id="id68">    {
+      // no path prepended
+      if(withExt)
+        return fileSpec;
+      else
+<div onclick="toggle_visibility('id69', 'x69'); " id="x69">[-]</div><pre id="id69">      {
+        // remove ext
+        size_t pos = fileSpec.find(".");
+        if(pos &gt; fileSpec.size())
+          return fileSpec;
+        return fileSpec.substr(0, pos-1);
+      }</pre>
+    }</pre>
+  }</pre>
+  if(withExt)
+    return fileSpec.substr(pos+1,fileSpec.length()-pos);
+  else
+<div onclick="toggle_visibility('id70', 'x70'); " id="x70">[-]</div><pre id="id70">  {
+    // remove ext
+    size_t pos2 = fileSpec.find(".", pos);
+    if(pos2 &gt; fileSpec.size())
+      // no ext
+      return fileSpec.substr(pos+1);
+    return fileSpec.substr(pos+1, pos2-pos-1);
+  }</pre>
+}</pre>
+//----&lt; get extension from fileSpec &gt;----------------------------------
+  
+std::string Path::getExt(const std::string& fileSpec)
+<div onclick="toggle_visibility('id71', 'x71'); " id="x71">[-]</div><pre id="id71">{
+  size_t pos1 = fileSpec.find_last_of('/');
+  size_t pos2 = fileSpec.find_last_of('\\');
+  size_t pos = fileSpec.find_last_of('.');
+  // handle ../ or ..\\ with no extension
+  if(pos1 &lt; fileSpec.length() || pos2 &lt; fileSpec.length())
+<div onclick="toggle_visibility('id72', 'x72'); " id="x72">[-]</div><pre id="id72">  {
+    if(pos &lt; min(pos1, pos2))
+      return std::string("");
+  }</pre>
+  // only . is extension delimiter
+  if(0 &lt;= pos && pos &lt; fileSpec.length())
+    return toLower(fileSpec.substr(pos+1,fileSpec.length()-pos));
+  return std::string("");
+}</pre>
+//----&lt; get path from fileSpec &gt;---------------------------------------
+
+std::string Path::getPath(const std::string &fileSpec)
+<div onclick="toggle_visibility('id73', 'x73'); " id="x73">[-]</div><pre id="id73">{
+  size_t pos = fileSpec.find_last_of("/");
+  if(pos &gt;= fileSpec.length())
+    pos = fileSpec.find_last_of("\\");
+  if(pos &gt;= fileSpec.length())
+    return ".";
+  if(fileSpec.find(".",pos+1))
+    return fileSpec.substr(0,pos+1);
+  return fileSpec;
+}</pre>
+//----&lt; get absoluth path from fileSpec &gt;------------------------------
+
+std::string Path::getFullFileSpec(const std::string &fileSpec)
+<div onclick="toggle_visibility('id74', 'x74'); " id="x74">[-]</div><pre id="id74">{
+  const size_t BufSize = 256;
+  char buffer[BufSize];
+  char filebuffer[BufSize];  // don't use but GetFullPathName will
+  char* name = filebuffer;
+  ::GetFullPathNameA(fileSpec.c_str(),BufSize, buffer, &name);
+  return std::string(buffer);
+}</pre>
+//----&lt; create file spec from path and name &gt;--------------------------
+
+std::string Path::fileSpec(const std::string &path, const std::string &name)
+<div onclick="toggle_visibility('id75', 'x75'); " id="x75">[-]</div><pre id="id75">{
+  std::string fs;
+  size_t len = path.size();
+  if(path[len-1] == '/' || path[len-1] == '\\')
+    fs = path + name;
+  else
+<div onclick="toggle_visibility('id76', 'x76'); " id="x76">[-]</div><pre id="id76">  {
+    if(path.find("/") &lt; path.size())
+      fs = path + "/" + name;
+    else if(path.find("\\") &lt; path.size())
+      fs = path + "\\" + name;
+    else
+      fs = path + "/" + name;
+  }</pre>
+  return fs;
+}</pre>
+//----&lt; return name of the current directory &gt;-----------------------------
+
+std::string Directory::getCurrentDirectory()
+<div onclick="toggle_visibility('id77', 'x77'); " id="x77">[-]</div><pre id="id77">{
+  char buffer[MAX_PATH];
+  ::GetCurrentDirectoryA(MAX_PATH,buffer);
+  return std::string(buffer);
+}</pre>
+//----&lt; change the current directory to path &gt;-----------------------------
+
+bool Directory::setCurrentDirectory(const std::string& path)
+<div onclick="toggle_visibility('id78', 'x78'); " id="x78">[-]</div><pre id="id78">{
+  return ::SetCurrentDirectoryA(path.c_str()) != 0;
+}</pre>
+//----&lt; get names of all the files matching pattern (path:name) &gt;----------
+
+std::vector&lt;std::string&gt; Directory::getFiles(const std::string& path, const std::string& pattern)
+<div onclick="toggle_visibility('id79', 'x79'); " id="x79">[-]</div><pre id="id79">{
+  std::vector&lt;std::string&gt; files;
+  FileSystemSearch fss;
+  std::string file = fss.firstFile(path, pattern);
+  if(file.size() == 0)
+    return files;
+  files.push_back(file);
+  while(true)
+<div onclick="toggle_visibility('id80', 'x80'); " id="x80">[-]</div><pre id="id80">  {
+    file = fss.nextFile();
+    if(file.size() == 0)
+      return files;
+    files.push_back(file);
+  }</pre>
+  return files;
+}</pre>
+//----&lt; get names of all directories matching pattern (path:name) &gt;--------
+
+std::vector&lt;std::string&gt; Directory::getDirectories(const std::string& path, const std::string& pattern)
+<div onclick="toggle_visibility('id81', 'x81'); " id="x81">[-]</div><pre id="id81">{
+  std::vector&lt;std::string&gt; dirs;
+  FileSystemSearch fss;
+  std::string dir = fss.firstDirectory(path, pattern);
+  if(dir.size() == 0)
+    return dirs;
+  dirs.push_back(dir);
+  while(true)
+<div onclick="toggle_visibility('id82', 'x82'); " id="x82">[-]</div><pre id="id82">  {
+    dir = fss.nextDirectory();
+    if(dir.size() == 0)
+      return dirs;
+    dirs.push_back(dir);
+  }</pre>
+  return dirs;
+}</pre>
+//----&lt; create directory &gt;-------------------------------------------------
+
+bool Directory::create(const std::string& path)
+<div onclick="toggle_visibility('id83', 'x83'); " id="x83">[-]</div><pre id="id83">{
+  return ::CreateDirectoryA(path.c_str(), NULL) == 0;
+}</pre>
+//----&lt; does directory exist? &gt;--------------------------------------------
+
+bool Directory::exists(const std::string& path)
+<div onclick="toggle_visibility('id84', 'x84'); " id="x84">[-]</div><pre id="id84">{
+  DWORD dwAttrib = GetFileAttributesA(path.c_str());
+
+  return (dwAttrib != INVALID_FILE_ATTRIBUTES && 
+         (dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
+}</pre>
+//----&lt; remove directory &gt;-------------------------------------------------
+
+bool Directory::remove(const std::string& path)
+<div onclick="toggle_visibility('id85', 'x85'); " id="x85">[-]</div><pre id="id85">{
+  return ::RemoveDirectoryA(path.c_str()) == 0;
+}</pre>
+//----&lt; find first file &gt;--------------------------------------------------
+
+std::string FileSystemSearch::firstFile(const std::string& path, const std::string& pattern)
+<div onclick="toggle_visibility('id86', 'x86'); " id="x86">[-]</div><pre id="id86">{
+  hFindFile = ::FindFirstFileA(Path::fileSpec(path, pattern).c_str(), pFindFileData);
+  if(hFindFile != INVALID_HANDLE_VALUE)
+<div onclick="toggle_visibility('id87', 'x87'); " id="x87">[-]</div><pre id="id87">  {
+    if(!(pFindFileData-&gt;dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+      return pFindFileData-&gt;cFileName;
+    else
+      while(::FindNextFileA(hFindFile, pFindFileData))
+        if(!(pFindFileData-&gt;dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+          return pFindFileData-&gt;cFileName;
+  }</pre>
+  return "";
+}</pre>
+//----&lt; find next file &gt;---------------------------------------------------
+
+std::string FileSystemSearch::nextFile()
+<div onclick="toggle_visibility('id88', 'x88'); " id="x88">[-]</div><pre id="id88">{
+  while(::FindNextFileA(hFindFile, pFindFileData))
+    if(!(pFindFileData-&gt;dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY))
+      return pFindFileData-&gt;cFileName;
+  return "";
+}</pre>
+//----&lt; find first file &gt;--------------------------------------------------
+
+std::string FileSystemSearch::firstDirectory(const std::string& path, const std::string& pattern)
+<div onclick="toggle_visibility('id89', 'x89'); " id="x89">[-]</div><pre id="id89">{
+  hFindFile = ::FindFirstFileA(Path::fileSpec(path, pattern).c_str(), pFindFileData);
+  if(hFindFile != INVALID_HANDLE_VALUE)
+<div onclick="toggle_visibility('id90', 'x90'); " id="x90">[-]</div><pre id="id90">  {
+    if(pFindFileData-&gt;dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+      return pFindFileData-&gt;cFileName;
+    else
+      while(::FindNextFileA(hFindFile, pFindFileData))
+        if(pFindFileData-&gt;dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+          return pFindFileData-&gt;cFileName;
+  }</pre>
+  return "";
+}</pre>
+//----&lt; find next file &gt;---------------------------------------------------
+
+std::string FileSystemSearch::nextDirectory()
+<div onclick="toggle_visibility('id91', 'x91'); " id="x91">[-]</div><pre id="id91">{
+  while(::FindNextFileA(hFindFile, pFindFileData))
+    if(pFindFileData-&gt;dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+      return pFindFileData-&gt;cFileName;
+  return "";
+}</pre>
+//----&lt; test stub &gt;--------------------------------------------------------
+
+#ifdef TEST_FILESYSTEM
+
+void title(const std::string& title, char ch='=')
+<div onclick="toggle_visibility('id92', 'x92'); " id="x92">[-]</div><pre id="id92">{
+  std::cout &lt;&lt; "\n  " &lt;&lt; title;
+  std::cout &lt;&lt; "\n " &lt;&lt; std::string(title.size()+2, ch);
+}</pre>
+int main(int argc, char* argv[])
+<div onclick="toggle_visibility('id93', 'x93'); " id="x93">[-]</div><pre id="id93">{
+  title("Demonstrate Path Class");
+
+  std::string fs = Path::fileSpec(".","temp.txt");
+  std::cout &lt;&lt; "\n  Path::fileSpec(\".\",\"temp.txt\") = " &lt;&lt; fs;
+
+  std::string path = Path::getPath(fs);
+  std::cout &lt;&lt; "\n  Path::getPath(\"" + fs + "\") = " &lt;&lt; path;
+  
+  std::string ffs = Path::getFullFileSpec(fs);
+  std::cout &lt;&lt; "\n  Path::getFullFileSpec(\"" + fs + "\") = " &lt;&lt; ffs;
+  
+  std::string name = Path::getName(fs);
+  std::cout &lt;&lt; "\n  Path::getName(\"" + fs + "\") = " &lt;&lt; name;
+
+  std::string ext = Path::getExt(fs);
+  std::cout &lt;&lt; "\n  Path::getExt(\"" + fs + "\") = " &lt;&lt; ext;
+
+  std::string upper = Path::toUpper("temp.txt");
+  std::cout &lt;&lt; "\n  Path::toUpper(\"temp.txt\") = " &lt;&lt; upper;
+
+  std::string lower = Path::toLower("Temp.Txt");
+  std::cout &lt;&lt; "\n  Path::toLower(\"Temp.Txt\") = " &lt;&lt; lower;
+  std::cout &lt;&lt; std::endl;
+  /*
+  title("Demonstrate FileSystemSearch class");
+
+  const size_t PathSetSize = 2;
+  std::string home = ::getenv("HOMEDRIVE");
+  std::string pathSet[] = { home+"\\\\", "." };
+  FileSystemSearch fss;
+  for(size_t i = 0; i&lt;PathSetSize; ++i)
+<div onclick="toggle_visibility('id94', 'x94'); " id="x94">[-]</div><pre id="id94">  {
+    std::cout &lt;&lt; "\n  searching for files on \"" &lt;&lt; pathSet[i] &lt;&lt; "\"";
+    std::cout &lt;&lt; "\n " &lt;&lt; std::string(27 + pathSet[i].size(), '-');
+    std::string searchPath = pathSet[i];
+    std::string fileName = fss.firstFile(searchPath);
+    if(fileName.size() &gt; 0)
+      std::cout &lt;&lt; "\n  " &lt;&lt; fileName;
+    else
+      std::cout &lt;&lt; "\n  no files match search";
+<div onclick="toggle_visibility('id95', 'x95'); " id="x95">[-]</div><pre id="id95">    while(true) {
+      fileName = fss.nextFile();
+      if(fileName.size() &gt; 0)
+        std::cout &lt;&lt; "\n  " &lt;&lt; fileName;
+      else
+        break;
+    }</pre>
+    std::cout &lt;&lt; std::endl;
+
+    std::cout &lt;&lt; "\n  searching for directories on \"" &lt;&lt; pathSet[i] &lt;&lt; "\"";
+    std::cout &lt;&lt; "\n " &lt;&lt; std::string(33 + pathSet[i].size(), '-');
+    std::string dirName = fss.firstDirectory(searchPath);
+    if(dirName.size() &gt; 0)
+      std::cout &lt;&lt; "\n  " &lt;&lt; dirName;
+    else
+      std::cout &lt;&lt; "\n  no directories match search";
+    while(true)
+<div onclick="toggle_visibility('id96', 'x96'); " id="x96">[-]</div><pre id="id96">    {
+      dirName = fss.nextDirectory();
+      if(dirName.size() &gt; 0)
+        std::cout &lt;&lt; "\n  " &lt;&lt; dirName;
+      else
+        break;
+    }</pre>
+    std::cout &lt;&lt; std::endl;
+  }</pre>
+  */
+  title("Demonstrate Directory class");
+
+  // Display contents of current directory
+
+  std::cout &lt;&lt; "\n  current directory is:\n    " &lt;&lt; Directory::getCurrentDirectory();
+  std::cout &lt;&lt; "\n  It contains files:";
+  std::vector&lt;std::string&gt; currfiles = Directory::getFiles();
+  ///////////////////////////////////////////////////////
+  // This works too
+  // std::vector&lt;std::string&gt; currfiles = d.getFiles();  
+  for(size_t i=0; i&lt;currfiles.size(); ++i)
+    std::cout &lt;&lt; "\n    " &lt;&lt; currfiles[i].c_str();
+  std::cout &lt;&lt; "\n  and contains directories:";
+  std::vector&lt;std::string&gt; currdirs = Directory::getDirectories();
+  for(size_t i=0; i&lt;currdirs.size(); ++i)
+    std::cout &lt;&lt; "\n    " &lt;&lt; currdirs[i].c_str();
+  std::cout &lt;&lt; "\n";
+
+  // Display contents of non-current directory
+
+  std::cout &lt;&lt; "\n  .txt files residing in C:/temp are:";
+  currfiles = Directory::getFiles("c:/temp/", "*.txt");
+
+  // if we want fully qualified file names, we have to
+  // set the current directory to the path on which the files
+  // reside, if it isn't already so set
+
+  std::string currDir = Directory::getCurrentDirectory();
+  Directory::setCurrentDirectory("c:/temp/");
+  for(size_t i=0; i&lt;currfiles.size(); ++i)
+    std::cout &lt;&lt; "\n    " &lt;&lt; Path::getFullFileSpec(currfiles[i]).c_str();
+  Directory::setCurrentDirectory(currDir);
+
+  // we have to restore the current directory so the
+  // remaining tests work
+
+  // it's probably easier just to use Path::fileSpec(path, filename)
+  // like this:
+
+  for (size_t i = 0; i&lt;currfiles.size(); ++i)
+    std::cout &lt;&lt; "\n    " &lt;&lt; Path::fileSpec("c:\\temp\\", currfiles[i]).c_str();
+
+  std::cout &lt;&lt; "\n";
+  std::cout &lt;&lt; "\n  directories residing in C:/temp are:";
+  currdirs = Directory::getDirectories("c:/temp/");
+  for(size_t i=0; i&lt;currdirs.size(); ++i)
+    std::cout &lt;&lt; "\n    " &lt;&lt; currdirs[i].c_str();
+  std::cout &lt;&lt; "\n";
+
+  // Create directory
+
+  title("Demonstrate FileInfo Class Operations", '=');
+  std::cout &lt;&lt; "\n";
+
+  Directory::setCurrentDirectory(".");
+  std::cout &lt;&lt; "\n  current path is \"" &lt;&lt; Directory::getCurrentDirectory();
+  
+  std::string fn1;
+  if(argc &gt; 1)
+    fn1 = argv[1];
+  else
+    fn1 = "c:\\temp\\test.txt";
+  FileInfo fi(fn1);
+
+  if(fi.good())
+<div onclick="toggle_visibility('id97', 'x97'); " id="x97">[-]</div><pre id="id97">  {
+    std::cout &lt;&lt; "\n  name: " &lt;&lt; "\t" &lt;&lt; fi.name();
+    std::cout &lt;&lt; "\n  date: " &lt;&lt; "\t" &lt;&lt; fi.date();
+    std::cout &lt;&lt; "\n  date: " &lt;&lt; "\t" &lt;&lt; fi.date(FileInfo::dateformat);
+    std::cout &lt;&lt; "\n  date: " &lt;&lt; "\t" &lt;&lt; fi.date(FileInfo::timeformat);
+    std::cout &lt;&lt; "\n  size: " &lt;&lt; "\t" &lt;&lt; fi.size() &lt;&lt; " bytes";
+    if(fi.isArchive())
+      std::cout &lt;&lt; "\n  is archive";
+    else
+      std::cout &lt;&lt; "\n  is not archive";
+    if(fi.isCompressed())
+      std::cout &lt;&lt; "\n  is compressed";
+    else
+      std::cout &lt;&lt; "\n  is not compressed";
+    if(fi.isDirectory())
+      std::cout &lt;&lt; "\n  is directory";
+    else
+      std::cout &lt;&lt; "\n  is not directory";
+    if(fi.isEncrypted())
+      std::cout &lt;&lt; "\n  is encrypted";
+    else
+      std::cout &lt;&lt; "\n  is not encrypted";
+    if(fi.isHidden())
+      std::cout &lt;&lt; "\n  is hidden";
+    else
+      std::cout &lt;&lt; "\n  is not hidden";
+    if(fi.isNormal())
+      std::cout &lt;&lt; "\n  is normal";
+    else
+      std::cout &lt;&lt; "\n  is not normal";
+    if(fi.isOffLine())
+      std::cout &lt;&lt; "\n  is offline";
+    else
+      std::cout &lt;&lt; "\n  is not offline";
+    if(fi.isReadOnly())
+      std::cout &lt;&lt; "\n  is readonly";
+    else
+      std::cout &lt;&lt; "\n  is not readonly";
+    if(fi.isSystem())
+      std::cout &lt;&lt; "\n  is system";
+    else
+      std::cout &lt;&lt; "\n  is not system";
+    if(fi.isTemporary())
+      std::cout &lt;&lt; "\n  is temporary";
+    else
+      std::cout &lt;&lt; "\n  is not temporary";
+  }</pre>
+  else
+    std::cout &lt;&lt; "\n  filename " &lt;&lt; fn1 &lt;&lt; " is not valid in this context\n";
+
+  std::string fn2;
+  if(argc &gt; 2)
+<div onclick="toggle_visibility('id98', 'x98'); " id="x98">[-]</div><pre id="id98">  {
+    fn1 = argv[1];
+    fn2 = argv[2];
+  }</pre>
+  else
+<div onclick="toggle_visibility('id99', 'x99'); " id="x99">[-]</div><pre id="id99">  {
+    fn1 = "FileSystem.h";
+    fn2 = "FileSystem.cpp";
+  }</pre>
+  FileInfo fi1(fn1);
+  FileInfo fi2(fn2);
+  if(fi1.good() && fi2.good())
+<div onclick="toggle_visibility('id100', 'x100'); " id="x100">[-]</div><pre id="id100">  {
+    if(fi1 == fi1)
+      std::cout &lt;&lt; "\n  " &lt;&lt; fi1.name() &lt;&lt; " == " &lt;&lt; fi1.name();
+    else
+      std::cout &lt;&lt; "\n  " &lt;&lt; fi1.name() &lt;&lt; " != " &lt;&lt; fi1.name();
+    if(fi1 &lt; fi1)
+      std::cout &lt;&lt; "\n  " &lt;&lt; fi1.name() &lt;&lt; " &lt; " &lt;&lt; fi1.name();
+    else
+      std::cout &lt;&lt; "\n  " &lt;&lt; fi1.name() &lt;&lt; " &gt;= " &lt;&lt; fi1.name();
+    if(fi1 == fi2)
+      std::cout &lt;&lt; "\n  " &lt;&lt; fi1.name() &lt;&lt; " == " &lt;&lt; fi2.name();
+    else
+      std::cout &lt;&lt; "\n  " &lt;&lt; fi1.name() &lt;&lt; " != " &lt;&lt; fi2.name();
+    if(fi1 &lt; fi2)
+      std::cout &lt;&lt; "\n  " &lt;&lt; fi1.name() &lt;&lt; " &lt; " &lt;&lt; fi2.name();
+    else
+      std::cout &lt;&lt; "\n  " &lt;&lt; fi1.name() &lt;&lt; " &gt;= " &lt;&lt; fi2.name();
+    if(fi1.smaller(fi2))
+      std::cout &lt;&lt; "\n  " &lt;&lt; fi1.name() &lt;&lt; " is smaller than " &lt;&lt; fi2.name();
+    else
+      std::cout &lt;&lt; "\n  " &lt;&lt; fi1.name() &lt;&lt; " is not smaller than " &lt;&lt; fi2.name();
+    if(fi1.earlier(fi2))
+      std::cout &lt;&lt; "\n  " &lt;&lt; fi1.name() &lt;&lt; " is earlier than " &lt;&lt; fi2.name();
+    else
+      std::cout &lt;&lt; "\n  " &lt;&lt; fi1.name() &lt;&lt; " is not earlier than " &lt;&lt; fi2.name();
+    std::cout &lt;&lt; std::endl;
+  }</pre>
+  else
+    std::cout &lt;&lt; "\n  files " &lt;&lt; fn1 &lt;&lt; " and " &lt;&lt; fn2 &lt;&lt; " are not valid in this context\n";
+
+  title("Demonstrate File class operations", '=');
+  std::cout &lt;&lt; "\n";
+
+  // copy binary file from one directory to another
+
+  File me("../debug/filesystemdemo.exe");
+  me.open(File::in, File::binary);
+  std::cout &lt;&lt; "\n  copying " &lt;&lt; me.name().c_str() &lt;&lt; " to c:/temp";
+  if(!me.isGood())
+<div onclick="toggle_visibility('id101', 'x101'); " id="x101">[-]</div><pre id="id101">  {
+    std::cout &lt;&lt; "\n  can't open executable\n";
+    std::cout &lt;&lt; "\n  looking for:\n  ";
+    std::cout &lt;&lt; Path::getFullFileSpec(me.name()) &lt;&lt; "\n";
+  }</pre>
+  else
+<div onclick="toggle_visibility('id102', 'x102'); " id="x102">[-]</div><pre id="id102">  {
+    File you("c:/temp/fileSystemdemo.exe");
+    you.open(File::out, File::binary);
+    if(you.isGood())
+<div onclick="toggle_visibility('id103', 'x103'); " id="x103">[-]</div><pre id="id103">    {
+      while(me.isGood())
+<div onclick="toggle_visibility('id104', 'x104'); " id="x104">[-]</div><pre id="id104">      {
+        static size_t count = 0;
+        Block b = me.getBlock(1024);
+        you.putBlock(b);
+        if (++count &lt; 10)
+<div onclick="toggle_visibility('id105', 'x105'); " id="x105">[-]</div><pre id="id105">        {
+          std::cout &lt;&lt; "\n    reading block of " &lt;&lt; b.size() &lt;&lt; " bytes";
+          std::cout &lt;&lt; "\n    writing block of " &lt;&lt; b.size() &lt;&lt; " bytes";
+        }</pre>
+        if (b.size() &lt; 1024)
+<div onclick="toggle_visibility('id106', 'x106'); " id="x106">[-]</div><pre id="id106">        {
+          std::cout &lt;&lt; "\n\n    omitted " &lt;&lt; count-10 &lt;&lt; " blocks from display\n\n";
+          std::cout &lt;&lt; "\n    reading block of " &lt;&lt; b.size() &lt;&lt; " bytes";
+          std::cout &lt;&lt; "\n    writing block of " &lt;&lt; b.size() &lt;&lt; " bytes";
+        }</pre>
+      }</pre>
+      std::cout &lt;&lt; "\n";
+    }</pre>
+  }</pre>
+
+  // save some filespecs of text files in a vector for File demonstrations
+
+  std::vector&lt;std::string&gt; files;
+  if(argc == 1)
+<div onclick="toggle_visibility('id107', 'x107'); " id="x107">[-]</div><pre id="id107">  {
+    std::cout &lt;&lt; "\n\n  Enter, on the command line, an additional filename to process.\n";
+  }</pre>
+
+  for(int i=1; i&lt;argc; ++i)
+<div onclick="toggle_visibility('id108', 'x108'); " id="x108">[-]</div><pre id="id108">  {
+    files.push_back(argv[i]);
+  }</pre>
+  files.push_back("FileSystem.cpp");                     // file not on current path
+  files.push_back("../FileSystemDemo/FileSystem.cpp");   // file from project directory
+  files.push_back("../FileSystemTest.txt");              // file in solution directory
+  files.push_back("foobar");                             // doesn't exist
+
+  // open each file and display a few lines of text
+
+  for(size_t i=0; i&lt;files.size(); ++i)
+<div onclick="toggle_visibility('id109', 'x109'); " id="x109">[-]</div><pre id="id109">  {
+    File file(files[i]);
+    file.open(File::in);
+    if(!file.isGood())
+<div onclick="toggle_visibility('id110', 'x110'); " id="x110">[-]</div><pre id="id110">    {
+      std::cout &lt;&lt; "\n  Can't open file " &lt;&lt; file.name();
+      std::cout &lt;&lt; "\n  Here's what the program can't find:\n  " &lt;&lt; Path::getFullFileSpec(file.name()); 
+      continue;
+    }</pre>
+    std::string temp = std::string("Processing file ") + files[i];
+    title(temp, '-');
+    for(int j=0; j&lt;10; ++j)
+<div onclick="toggle_visibility('id111', 'x111'); " id="x111">[-]</div><pre id="id111">    {
+      if(!file.isGood())
+        break;
+      std::cout &lt;&lt; "\n  -- " &lt;&lt; file.getLine().c_str();
+    }</pre>
+    std::cout &lt;&lt; "\n";
+  }</pre>
+  std::cout &lt;&lt; "\n";
+
+  // read all lines of text file into string
+
+  title("testing File::readAll()", '-');
+  std::cout &lt;&lt; "\n";
+  File testAll("../FileSystemTest.txt");
+  testAll.open(File::in);
+  if (testAll.isGood())
+<div onclick="toggle_visibility('id112', 'x112'); " id="x112">[-]</div><pre id="id112">  {
+    std::string all = testAll.readAll();
+    std::cout &lt;&lt; all &lt;&lt; "\n";
+  }</pre>
+  testAll.close();
+
+  title("testing File::readAll(true)", '-');
+  std::cout &lt;&lt; "\n";
+  File testAllTrue("../FileSystemTest.txt");
+  testAllTrue.open(File::in);
+  if (testAllTrue.isGood())
+<div onclick="toggle_visibility('id113', 'x113'); " id="x113">[-]</div><pre id="id113">  {
+    std::string all = testAllTrue.readAll(true);
+    std::cout &lt;&lt; all &lt;&lt; "\n";
+  }</pre>
+  testAllTrue.close();
+
+  // test reading non-text files
+
+  title("test reading non-text files", '-');
+  std::cout &lt;&lt; "\n";
+  std::string testPath = "./debug";  // run from project directory (what Visual Studio does)
+  if (!Directory::exists(testPath))
+    testPath = ".";                  // run from solution debug directory
+  std::vector&lt;std::string&gt; testFiles = Directory::getFiles(testPath);
+  for (auto file : testFiles)
+<div onclick="toggle_visibility('id114', 'x114'); " id="x114">[-]</div><pre id="id114">  {
+    try
+<div onclick="toggle_visibility('id115', 'x115'); " id="x115">[-]</div><pre id="id115">    {
+      std::string ext = Path::getExt(file);
+      if (ext == "exe" || ext == "dll" || file == "run.dat")
+<div onclick="toggle_visibility('id116', 'x116'); " id="x116">[-]</div><pre id="id116">      {
+        /* reading binary file works, but generates a lot of garbage */
+        /* I use run.dat to capture this output so including will make output confusing */
+
+        std::cout &lt;&lt; "  skipping binary file " &lt;&lt; file &lt;&lt; "\n";
+        continue;
+      }</pre>
+      File test(file);
+      test.open(File::in);  // open as text file
+      std::cout &lt;&lt; "\n  processing \"" &lt;&lt; file &lt;&lt; "\"\n";
+      if (test.isGood())
+<div onclick="toggle_visibility('id117', 'x117'); " id="x117">[-]</div><pre id="id117">      {
+        std::string text = test.readAll(true);
+        std::cout &lt;&lt; text &lt;&lt; "\n";
+      }</pre>
+      else
+<div onclick="toggle_visibility('id118', 'x118'); " id="x118">[-]</div><pre id="id118">      {
+        std::cout &lt;&lt; "\n  open failed\n";
+      }</pre>
+    }</pre>
+    catch (std::exception& ex)
+<div onclick="toggle_visibility('id119', 'x119'); " id="x119">[-]</div><pre id="id119">    {
+      std::cout &lt;&lt; "\n  Exception: " &lt;&lt; ex.what() &lt;&lt; "\n";
+    }</pre>
+  }</pre>
+
+  // read text file and write to another text file
+
+  title("writing to c:/temp/test.txt", '-');
+  File in("../FileSystemDemo/FileSystem.h");
+  in.open(File::in, File::text);
+  File out("c:/temp/test.txt");
+  out.open(File::out, File::text);
+  while(in.isGood())
+<div onclick="toggle_visibility('id120', 'x120'); " id="x120">[-]</div><pre id="id120">  {
+    std::string temp = in.getLine();
+    //std::cout &lt;&lt; "\n  " &lt;&lt; temp.c_str();
+    out.putLine(temp);
+    out.putLine("\n");
+  }</pre>
+  std::cout &lt;&lt; "\n  check c:/temp/test.txt to validate";
+  std::cout &lt;&lt; "\n\n";
+
+  // read and write buffers
+
+  title("reading and writing buffers");
+  std::cout &lt;&lt; "\n  " &lt;&lt; FileSystem::Directory::getCurrentDirectory();
+  std::string fileIn = "TestFileSystem/UnitTest.h";
+  std::string fileOut = "TestFileSystem/CopyOfUnitTest.h";
+  File bufferIn(fileIn);
+  bufferIn.open(File::in, File::binary);
+  if (!bufferIn.isGood())
+<div onclick="toggle_visibility('id121', 'x121'); " id="x121">[-]</div><pre id="id121">  {
+    std::cout &lt;&lt; "\n  could not open \"" &lt;&lt; fileIn &lt;&lt; "\" for reading";
+      return 1;
+  }</pre>
+  else
+<div onclick="toggle_visibility('id122', 'x122'); " id="x122">[-]</div><pre id="id122">  {
+    std::cout &lt;&lt; "\n  opening: \"" &lt;&lt; fileIn &lt;&lt; "\" for reading";
+  }</pre>
+  File bufferOut(fileOut);
+  bufferOut.open(File::out, File::binary);
+  if (!bufferOut.isGood())
+<div onclick="toggle_visibility('id123', 'x123'); " id="x123">[-]</div><pre id="id123">  {
+    std::cout &lt;&lt; "\n  could not open \"" &lt;&lt; fileOut &lt;&lt; "\" for writing\n\n";
+      return 1;
+  }</pre>
+  else
+<div onclick="toggle_visibility('id124', 'x124'); " id="x124">[-]</div><pre id="id124">  {
+    std::cout &lt;&lt; "\n  opening: \"" &lt;&lt; fileOut &lt;&lt; "\" for writing";
+  }</pre>
+  std::cout &lt;&lt; "\n";
+  const size_t bufLen = 124;
+  File::byte buffer[bufLen];
+  while (true)
+<div onclick="toggle_visibility('id125', 'x125'); " id="x125">[-]</div><pre id="id125">  {
+    size_t resultSize = bufferIn.getBuffer(bufLen, buffer);
+    //std::cout &lt;&lt; "\n  reading buffer of size " &lt;&lt; resultSize &lt;&lt; " bytes";
+    std::string temp1(buffer, resultSize);
+    std::cout &lt;&lt; temp1;
+    //std::cout &lt;&lt; "\n  writing buffer of size " &lt;&lt; resultSize &lt;&lt; "bytes";
+    bufferOut.putBuffer(resultSize, buffer);
+    if (resultSize &lt; bufLen || !bufferIn.isGood() || !bufferOut.isGood())
+<div onclick="toggle_visibility('id126', 'x126'); " id="x126">[-]</div><pre id="id126">    {
+      bufferIn.close();
+      bufferOut.close();
+      break;
+    }</pre>
+  }</pre>
+  std::cout &lt;&lt; "\n\n";
+}</pre>
+#endif
+    </pre>
+    <hr />
+  </body>
+</html>

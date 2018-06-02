@@ -1,0 +1,51 @@
+
+<graph>
+  <vertex id="0" value="Graph.cpp">
+    <edge targetId="1" value="Graph.h">
+    </edge>
+    <edge targetId="4" value="XmlWriter.cpp">
+    </edge>
+  </vertex>
+  <vertex id="1" value="Graph.h">
+    <edge targetId="2" value="XmlReader.cpp">
+    </edge>
+    <edge targetId="3" value="XmlReader.h">
+    </edge>
+    <edge targetId="4" value="XmlWriter.cpp">
+    </edge>
+    <edge targetId="5" value="XmlWriter.h">
+    </edge>
+  </vertex>
+  <vertex id="2" value="XmlReader.cpp">
+    <edge targetId="3" value="XmlReader.h">
+    </edge>
+    <edge targetId="4" value="XmlWriter.cpp">
+    </edge>
+    <edge targetId="5" value="XmlWriter.h">
+    </edge>
+  </vertex>
+  <vertex id="3" value="XmlReader.h">
+    <edge targetId="2" value="XmlReader.cpp">
+    </edge>
+    <edge targetId="4" value="XmlWriter.cpp">
+    </edge>
+    <edge targetId="5" value="XmlWriter.h">
+    </edge>
+  </vertex>
+  <vertex id="4" value="XmlWriter.cpp">
+    <edge targetId="2" value="XmlReader.cpp">
+    </edge>
+    <edge targetId="3" value="XmlReader.h">
+    </edge>
+    <edge targetId="5" value="XmlWriter.h">
+    </edge>
+  </vertex>
+  <vertex id="5" value="XmlWriter.h">
+    <edge targetId="2" value="XmlReader.cpp">
+    </edge>
+    <edge targetId="3" value="XmlReader.h">
+    </edge>
+    <edge targetId="4" value="XmlWriter.cpp">
+    </edge>
+  </vertex>
+</graph>

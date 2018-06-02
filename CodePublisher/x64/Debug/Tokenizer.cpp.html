@@ -1,0 +1,790 @@
+<html>
+  <head>
+    <style>
+		body {
+			margin:20px; color:black; background-color:#eee;
+			font-family:Consolas; font-weight:600; font-size:110 % ;
+		}
+		.indent{ margin-left:20px; margin-right:20px; }
+		h4{ margin-bottom: 3px; margin-top:3px; }
+	</style>
+	<script type = "text/javascript">
+     function toggle_visibility(id, id2) {
+       var e = document.getElementById(id); 
+       var label = document.getElementById(id2); 
+       if (e.style.display == 'none') {
+         label.innerHTML = label.innerHTML.replace("[+] {...}", "[-]");
+         e.style.display = 'block'; 
+       }
+       else {
+         label.innerHTML = label.innerHTML.replace("[-]", "[+] {...}"); 
+         e.style.display = 'none'; 
+       }
+     }
+	</script>
+  </head>
+  <body>
+    <h3>Tokenizer.cpp</h3>
+    <hr />
+    <div class="indent">
+      <h4>Dependencies:</h4>
+      <a href="AbstrSynTree.cpp.html">AbstrSynTree.cpp</a><br />
+      <a href="FileSystem.cpp.html">FileSystem.cpp</a><br />
+      <a href="SemiExp.h.html">SemiExp.h</a><br />
+      <a href="Tokenizer.h.html">Tokenizer.h</a><br />
+      <a href="Utilities.cpp.html">Utilities.cpp</a><br />
+      <a href="Utilities.h.html">Utilities.h</a><br />
+      <a href="XmlWriter.h.html">XmlWriter.h</a><br />
+      <a href="itokcollection.h.html">itokcollection.h</a><br />
+    </div>
+    <hr />
+    <pre>
+/////////////////////////////////////////////////////////////////////
+// Tokenizer.cpp - read words from a std::stream                   //
+// ver 4.2                                                         //
+// Language:    C++, Visual Studio 2015                            //
+// Platform:    Dell XPS 8900, Windows 10                          //
+// Application: Parser component, CSE687 - Object Oriented Design  //
+// Author:      Jim Fawcett, Syracuse University, CST 4-187        //
+//              jfawcett@twcny.rr.com                              //
+/////////////////////////////////////////////////////////////////////
+
+#include &lt;iostream&gt;
+#include &lt;locale&gt;
+#include &lt;string&gt;
+#include &lt;vector&gt;
+#include "Tokenizer.h"
+#include "..\Utilities\Utilities.h"
+
+namespace Scanner
+<div onclick="toggle_visibility('id1', 'x1'); " id="x1">[-]</div><pre id="id1">{
+  ///////////////////////////////////////////////////////////////////
+  // Context is a shared data storage facility.
+  /*
+   * - with Context we don't need static members to share
+   *   state pointes etc.  Context holds and shares all that.
+   * - Context is an entirely private facility used by ConsumeState
+   *   and its derived instances, so there is no need for encapsulation
+   *   and we use a struct.  This won't be appropriate if we handed
+   *   the context to clients of Toker.
+   */
+  struct Context
+<div onclick="toggle_visibility('id2', 'x2'); " id="x2">[-]</div><pre id="id2">  {
+    Context();
+    ~Context();
+    std::string token;
+    std::istream* _pIn;
+    std::vector&lt;std::string&gt; _oneCharTokens =
+<div onclick="toggle_visibility('id3', 'x3'); " id="x3">[-]</div><pre id="id3">    {
+      "\n", "&lt;", "&gt;", "{", "}", "[", "]", "(", ")", ":", ";", " = ", " + ", " - ", "*", ".", ",", "@"
+    };</pre>
+    std::vector&lt;std::string&gt; _twoCharTokens =
+<div onclick="toggle_visibility('id4', 'x4'); " id="x4">[-]</div><pre id="id4">    {
+      "&lt;&lt;", "&gt;&gt;", "::", "++", "--", "==", "+=", "-=", "*=", "/="
+    };</pre>
+    int prevChar;
+    int currChar;
+    bool _doReturnComments;
+    bool inCSharpString = false;
+    size_t _lineCount;
+    ConsumeState* _pState;
+    ConsumeState* _pEatCppComment;
+    ConsumeState* _pEatCComment;
+    ConsumeState* _pEatWhitespace;
+    ConsumeState* _pEatPunctuator;
+    ConsumeState* _pEatAlphanum;
+    ConsumeState* _pEatSpecialCharacters;
+    ConsumeState* _pEatDQString;
+    ConsumeState* _pEatSQString;
+    ConsumeState* _pEatRawCppString;
+    ConsumeState* _pEatRawCSharpString;
+  };</pre>
+
+  ///////////////////////////////////////////////////////////////////
+  // private ConsumeState worker class
+  /*
+   *   Nota Bene:
+   *   - At exit the eatChars() member should return with
+   *     currChar set to the first non-state character.
+   *   - Each derived class must insure that this condition
+   *     is meet.
+   */
+  class ConsumeState
+<div onclick="toggle_visibility('id5', 'x5'); " id="x5">[-]</div><pre id="id5">  {
+    friend class Toker;
+  public:
+    using Token = std::string;
+    ConsumeState();
+    ConsumeState(const ConsumeState&) = delete;
+    ConsumeState& operator=(const ConsumeState&) = delete;
+    virtual ~ConsumeState();
+    void attach(std::istream* pIn);
+    virtual void eatChars() = 0;
+<div onclick="toggle_visibility('id6', 'x6'); " id="x6">[-]</div><pre id="id6">    void consumeChars() {
+      _pContext-&gt;_pState-&gt;eatChars();
+      _pContext-&gt;_pState = nextState();
+    }</pre>
+    bool canRead() { return _pContext-&gt;_pIn-&gt;good(); }
+    std::string getTok() { return _pContext-&gt;token; }
+    bool hasTok() { return _pContext-&gt;token.size() &gt; 0; }
+    ConsumeState* nextState();
+    void returnComments(bool doReturnComments = false);
+    size_t currentLineCount();
+    void setSpecialTokens(const std::string& commaSeparatedString);
+    void setContext(Context* pContext);
+  protected:
+    Context* _pContext;
+    bool collectChar();
+    bool isOneCharToken(Token tok);
+    bool isTwoCharToken(Token tok);
+    Token makeString(int ch);
+  };</pre>
+}</pre>
+
+using namespace Scanner;
+using Token = std::string;
+
+//----&lt; used by Toker to provide Consumer with Context ptr &gt;---------
+
+void ConsumeState::setContext(Context* pContext)
+<div onclick="toggle_visibility('id7', 'x7'); " id="x7">[-]</div><pre id="id7">{
+  _pContext = pContext;
+}</pre>
+//----&lt; attach or re-attach to input stream &gt;------------------------
+
+void ConsumeState::attach(std::istream* pIn)
+<div onclick="toggle_visibility('id8', 'x8'); " id="x8">[-]</div><pre id="id8">{
+  _pContext-&gt;_pState = _pContext-&gt;_pEatWhitespace;
+  _pContext-&gt;_lineCount = 0;
+  _pContext-&gt;_pIn = pIn;
+}</pre>
+//----&lt; replace one and two char tokens &gt;----------------------------
+
+void ConsumeState::setSpecialTokens(const std::string& commaSeparatedTokens)
+<div onclick="toggle_visibility('id9', 'x9'); " id="x9">[-]</div><pre id="id9">{
+  std::vector&lt;Token&gt; result = Utilities::StringHelper::split(commaSeparatedTokens);
+  _pContext-&gt;_oneCharTokens.clear();
+  _pContext-&gt;_twoCharTokens.clear();
+  for (std::string item : result)
+<div onclick="toggle_visibility('id10', 'x10'); " id="x10">[-]</div><pre id="id10">  {
+    if (item.size() == 1 || item == "\n")
+      _pContext-&gt;_oneCharTokens.push_back(item);
+    if (item.size() &gt;= 2)
+      _pContext-&gt;_twoCharTokens.push_back(item);
+  }</pre>
+}</pre>
+//----&lt; return number of newlines collected from stream &gt;------------
+
+size_t ConsumeState::currentLineCount() { return _pContext-&gt;_lineCount; }
+
+//----&lt; collect character from stream &gt;------------------------------
+
+bool ConsumeState::collectChar()
+<div onclick="toggle_visibility('id11', 'x11'); " id="x11">[-]</div><pre id="id11">{
+  if (_pContext-&gt;_pIn-&gt;good())
+<div onclick="toggle_visibility('id12', 'x12'); " id="x12">[-]</div><pre id="id12">  {
+    _pContext-&gt;prevChar = _pContext-&gt;currChar;
+    _pContext-&gt;currChar = _pContext-&gt;_pIn-&gt;get();
+    if (_pContext-&gt;currChar == '\n')
+      ++(_pContext-&gt;_lineCount);
+    return true;
+  }</pre>
+  return false;
+}</pre>
+
+//----&lt; logs to console if TEST_LOG is defined &gt;---------------------
+
+void testLog(const std::string& msg);  // forward declaration
+
+//----&lt; turn on\off returning comments as tokens &gt;-------------------
+
+void ConsumeState::returnComments(bool doReturnComments)
+<div onclick="toggle_visibility('id13', 'x13'); " id="x13">[-]</div><pre id="id13">{
+  _pContext-&gt;_doReturnComments = doReturnComments;
+}</pre>
+//----&lt; is tok one of the special one character tokens? &gt;------------
+
+bool ConsumeState::isOneCharToken(Token tok)
+<div onclick="toggle_visibility('id14', 'x14'); " id="x14">[-]</div><pre id="id14">{
+  for (size_t i = 0; i &lt; _pContext-&gt;_oneCharTokens.size(); ++i)
+    if (_pContext-&gt;_oneCharTokens[i] == tok)
+      return true;
+  return false;
+}</pre>
+//----&lt; is tok one of the special two character tokens? &gt;------------
+
+bool ConsumeState::isTwoCharToken(Token tok)
+<div onclick="toggle_visibility('id15', 'x15'); " id="x15">[-]</div><pre id="id15">{
+  for (size_t i = 0; i &lt; _pContext-&gt;_twoCharTokens.size(); ++i)
+    if (_pContext-&gt;_twoCharTokens[i] == tok)
+      return true;
+  return false;
+}</pre>
+//----&lt; make a string with this one integer &gt;------------------------
+
+ConsumeState::Token ConsumeState::makeString(int ch)
+<div onclick="toggle_visibility('id16', 'x16'); " id="x16">[-]</div><pre id="id16">{
+  Token temp;
+  return temp += ch;
+}</pre>
+//----&lt; decide which state to use next &gt;-----------------------------
+
+ConsumeState* ConsumeState::nextState()
+<div onclick="toggle_visibility('id17', 'x17'); " id="x17">[-]</div><pre id="id17">{
+  std::locale loc;
+
+  if (!(_pContext-&gt;_pIn-&gt;good()))
+<div onclick="toggle_visibility('id18', 'x18'); " id="x18">[-]</div><pre id="id18">  {
+    return nullptr;
+  }</pre>
+  int chNext = _pContext-&gt;_pIn-&gt;peek();
+  if (chNext == EOF)
+<div onclick="toggle_visibility('id19', 'x19'); " id="x19">[-]</div><pre id="id19">  {
+    _pContext-&gt;_pIn-&gt;clear();
+    // if peek() reads end of file character, EOF, then eofbit is set and
+    // _pIn-&gt;good() will return false.  clear() restores state to good
+  }</pre>
+  //---------------------------------------------------------
+  // The following tests must come first
+
+  if (_pContext-&gt;currChar == '\"' && _pContext-&gt;prevChar != '\\')
+<div onclick="toggle_visibility('id20', 'x20'); " id="x20">[-]</div><pre id="id20">  {
+    testLog("state: eatDQString");
+    return _pContext-&gt;_pEatDQString;
+  }</pre>
+  if (_pContext-&gt;currChar == '\'' && _pContext-&gt;prevChar != '\\')
+<div onclick="toggle_visibility('id21', 'x21'); " id="x21">[-]</div><pre id="id21">  {
+    testLog("state: eatSQString");
+    return _pContext-&gt;_pEatSQString;
+  }</pre>
+  if (_pContext-&gt;currChar == '/' && chNext == '/')
+<div onclick="toggle_visibility('id22', 'x22'); " id="x22">[-]</div><pre id="id22">  {
+    testLog("state: eatCppComment");
+    return _pContext-&gt;_pEatCppComment;
+  }</pre>
+  if (_pContext-&gt;currChar == '/' && chNext == '*')
+<div onclick="toggle_visibility('id23', 'x23'); " id="x23">[-]</div><pre id="id23">  {
+    testLog("state: eatCComment");
+    return _pContext-&gt;_pEatCComment;
+  }</pre>
+  if (_pContext-&gt;currChar == 'R' && chNext == '\"')
+<div onclick="toggle_visibility('id24', 'x24'); " id="x24">[-]</div><pre id="id24">  {
+    testLog("state: eatRawCppString");
+    return _pContext-&gt;_pEatRawCppString;
+  }</pre>
+  if (_pContext-&gt;currChar == '@' && chNext == '\"')
+<div onclick="toggle_visibility('id25', 'x25'); " id="x25">[-]</div><pre id="id25">  {
+    testLog("state: eatRawCSharpString");
+    return _pContext-&gt;_pEatRawCSharpString;
+  }</pre>
+  //---------------------------------------------------------
+  // The following tests must come after those above
+
+  if (isOneCharToken(makeString(_pContext-&gt;currChar)))
+<div onclick="toggle_visibility('id26', 'x26'); " id="x26">[-]</div><pre id="id26">  {
+    testLog("state: eatSpecialCharacters");
+    return _pContext-&gt;_pEatSpecialCharacters;
+  }</pre>
+  if (std::isspace(_pContext-&gt;currChar, loc) && _pContext-&gt;currChar != '\n')
+<div onclick="toggle_visibility('id27', 'x27'); " id="x27">[-]</div><pre id="id27">  {
+    testLog("state: eatWhitespace");
+    return _pContext-&gt;_pEatWhitespace;
+  }</pre>
+  if (std::isalnum(_pContext-&gt;currChar, loc) || _pContext-&gt;currChar == '_')
+<div onclick="toggle_visibility('id28', 'x28'); " id="x28">[-]</div><pre id="id28">  {
+    testLog("state: eatAlphanum");
+    return _pContext-&gt;_pEatAlphanum;
+  }</pre>
+  if (ispunct(_pContext-&gt;currChar))
+<div onclick="toggle_visibility('id29', 'x29'); " id="x29">[-]</div><pre id="id29">  {
+    testLog("state: eatPunctuator");
+    return _pContext-&gt;_pEatPunctuator;
+  }</pre>
+  if (!_pContext-&gt;_pIn-&gt;good())
+<div onclick="toggle_visibility('id30', 'x30'); " id="x30">[-]</div><pre id="id30">  {
+    testLog("state: eatWhitespace");
+    return _pContext-&gt;_pEatWhitespace;
+  }</pre>
+  //---------------------------------------------------------
+  // If _pContext-&gt;currChar is not a state transition char
+  // then we go to eatPuctuator state
+
+  return _pContext-&gt;_pEatPunctuator;
+}</pre>
+//----&lt; class that consumes whitespace &gt;-----------------------------
+
+class EatWhitespace : public ConsumeState
+<div onclick="toggle_visibility('id31', 'x31'); " id="x31">[-]</div><pre id="id31">{
+public:
+  EatWhitespace(Context* pContext)
+<div onclick="toggle_visibility('id32', 'x32'); " id="x32">[-]</div><pre id="id32">  {
+    _pContext = pContext;
+  }</pre>
+  virtual void eatChars()
+<div onclick="toggle_visibility('id33', 'x33'); " id="x33">[-]</div><pre id="id33">  {
+    std::locale loc;
+    _pContext-&gt;token.clear();
+<div onclick="toggle_visibility('id34', 'x34'); " id="x34">[-]</div><pre id="id34">    do {
+      if (!collectChar())
+        return;
+    } while (std::isspace(_pContext-&gt;currChar, loc) && _pContext-&gt;currChar != '\n');</pre>
+  }</pre>
+};</pre>
+//----&lt; class that consumes C++ comment &gt;----------------------------
+
+class EatCppComment : public ConsumeState
+<div onclick="toggle_visibility('id35', 'x35'); " id="x35">[-]</div><pre id="id35">{
+public:
+  EatCppComment(Context* pContext)
+<div onclick="toggle_visibility('id36', 'x36'); " id="x36">[-]</div><pre id="id36">  {
+    _pContext = pContext;
+  }</pre>
+  virtual void eatChars()
+<div onclick="toggle_visibility('id37', 'x37'); " id="x37">[-]</div><pre id="id37">  {
+    _pContext-&gt;token.clear();
+<div onclick="toggle_visibility('id38', 'x38'); " id="x38">[-]</div><pre id="id38">    do {
+      if (_pContext-&gt;_doReturnComments)
+        _pContext-&gt;token += _pContext-&gt;currChar;
+      if (!collectChar())
+        return;
+    } while (_pContext-&gt;currChar != '\n');</pre>
+  }</pre>
+};</pre>
+//----&lt; class that consumes C comment &gt;------------------------------
+
+class EatCComment : public ConsumeState
+<div onclick="toggle_visibility('id39', 'x39'); " id="x39">[-]</div><pre id="id39">{
+public:
+  EatCComment(Context* pContext)
+<div onclick="toggle_visibility('id40', 'x40'); " id="x40">[-]</div><pre id="id40">  {
+    _pContext = pContext;
+  }</pre>
+  virtual void eatChars()
+<div onclick="toggle_visibility('id41', 'x41'); " id="x41">[-]</div><pre id="id41">  {
+    _pContext-&gt;token.clear();
+<div onclick="toggle_visibility('id42', 'x42'); " id="x42">[-]</div><pre id="id42">    do {
+      if (_pContext-&gt;_doReturnComments)
+        _pContext-&gt;token += _pContext-&gt;currChar;
+      if (!collectChar())
+        return;
+    } while (_pContext-&gt;currChar != '*' || _pContext-&gt;_pIn-&gt;peek() != '/');</pre>
+    if (_pContext-&gt;_doReturnComments)
+      _pContext-&gt;token += _pContext-&gt;currChar;
+    if (!collectChar())      // get terminating '/'
+      return;
+    if (_pContext-&gt;_doReturnComments)
+      _pContext-&gt;token += _pContext-&gt;currChar;
+    collectChar();           // get first non-comment char
+  }</pre>
+};</pre>
+//----&lt; class that eats punctuators &gt;--------------------------------
+
+class EatPunctuator : public ConsumeState
+<div onclick="toggle_visibility('id43', 'x43'); " id="x43">[-]</div><pre id="id43">{
+public:
+  EatPunctuator(Context* pContext)
+<div onclick="toggle_visibility('id44', 'x44'); " id="x44">[-]</div><pre id="id44">  {
+    _pContext = pContext;
+  }</pre>
+  virtual void eatChars()
+<div onclick="toggle_visibility('id45', 'x45'); " id="x45">[-]</div><pre id="id45">  {
+    _pContext-&gt;token.clear();
+    int chNext = _pContext-&gt;_pIn-&gt;peek();
+<div onclick="toggle_visibility('id46', 'x46'); " id="x46">[-]</div><pre id="id46">    do {
+      if (_pContext-&gt;currChar == '\"' && _pContext-&gt;prevChar != '\\')    // start of double quoted string
+<div onclick="toggle_visibility('id47', 'x47'); " id="x47">[-]</div><pre id="id47">      {
+        return;
+      }</pre>
+      if (_pContext-&gt;currChar == '@' && chNext == '\"')    // start of raw C# double quoted string
+<div onclick="toggle_visibility('id48', 'x48'); " id="x48">[-]</div><pre id="id48">      {
+        return;
+      }</pre>
+      if (_pContext-&gt;currChar == '\'' && _pContext-&gt;prevChar != '\\')    // start of single quoted string
+<div onclick="toggle_visibility('id49', 'x49'); " id="x49">[-]</div><pre id="id49">      {
+        return;
+      }</pre>
+      Token temp = makeString(_pContext-&gt;currChar);
+      if (isOneCharToken(temp))
+<div onclick="toggle_visibility('id50', 'x50'); " id="x50">[-]</div><pre id="id50">      {
+        return;
+      }</pre>
+      _pContext-&gt;token += _pContext-&gt;currChar;
+      if (!_pContext-&gt;_pIn-&gt;good())  // end of stream
+<div onclick="toggle_visibility('id51', 'x51'); " id="x51">[-]</div><pre id="id51">      {
+        return;
+      }</pre>
+      if (!collectChar())
+        return;
+    } while (ispunct(_pContext-&gt;currChar));</pre>
+  }</pre>
+};</pre>
+//----&lt; class that eats alphanumeric characters &gt;--------------------
+/*
+ * treats underscore '_' as alphanumeric character
+ */
+class EatAlphanum : public ConsumeState
+<div onclick="toggle_visibility('id52', 'x52'); " id="x52">[-]</div><pre id="id52">{
+public:
+  EatAlphanum(Context* pContext)
+<div onclick="toggle_visibility('id53', 'x53'); " id="x53">[-]</div><pre id="id53">  {
+    _pContext = pContext;
+  }</pre>
+  virtual void eatChars()
+<div onclick="toggle_visibility('id54', 'x54'); " id="x54">[-]</div><pre id="id54">  {
+    _pContext-&gt;token.clear();
+    int chNext = _pContext-&gt;_pIn-&gt;peek();
+<div onclick="toggle_visibility('id55', 'x55'); " id="x55">[-]</div><pre id="id55">    do {
+      _pContext-&gt;token += _pContext-&gt;currChar;
+      if (!collectChar())
+        return;
+    } while (isalnum(_pContext-&gt;currChar) || _pContext-&gt;currChar == '_');</pre>
+  }</pre>
+};</pre>
+//----&lt; class that eats one and two character tokens &gt;---------------
+
+class EatSpecialCharacters : public ConsumeState
+<div onclick="toggle_visibility('id56', 'x56'); " id="x56">[-]</div><pre id="id56">{
+public:
+  EatSpecialCharacters(Context* pContext)
+<div onclick="toggle_visibility('id57', 'x57'); " id="x57">[-]</div><pre id="id57">  {
+    _pContext = pContext;
+  }</pre>
+  virtual void eatChars()
+<div onclick="toggle_visibility('id58', 'x58'); " id="x58">[-]</div><pre id="id58">  {
+    _pContext-&gt;token.clear();
+    _pContext-&gt;token += _pContext-&gt;currChar;
+    Token temp = makeString(_pContext-&gt;currChar) += _pContext-&gt;_pIn-&gt;peek();
+    if (isTwoCharToken(temp))
+<div onclick="toggle_visibility('id59', 'x59'); " id="x59">[-]</div><pre id="id59">    {
+      collectChar();
+      _pContext-&gt;token += _pContext-&gt;currChar;
+    }</pre>
+    collectChar();
+  }</pre>
+};</pre>
+//----&lt; class that eats double quoted string &gt;-----------------------
+
+bool isEscapted(std::string tok)
+<div onclick="toggle_visibility('id60', 'x60'); " id="x60">[-]</div><pre id="id60">{
+  size_t backSlashCount = 0;
+  for (size_t i = tok.size() - 1; i &gt;= 0; --i)
+<div onclick="toggle_visibility('id61', 'x61'); " id="x61">[-]</div><pre id="id61">  {
+    if (tok[i] == '\\')
+      ++backSlashCount;
+    else break;
+  }</pre>
+  return (backSlashCount % 2 == 1);
+}</pre>
+//----&lt; class that eats double quoted string &gt;-----------------------
+
+class EatDQString : public ConsumeState
+<div onclick="toggle_visibility('id62', 'x62'); " id="x62">[-]</div><pre id="id62">{
+public:
+  EatDQString(Context* pContext)
+<div onclick="toggle_visibility('id63', 'x63'); " id="x63">[-]</div><pre id="id63">  {
+    _pContext = pContext;
+  }</pre>
+  virtual void eatChars()
+<div onclick="toggle_visibility('id64', 'x64'); " id="x64">[-]</div><pre id="id64">  {
+    _pContext-&gt;token.clear();
+    do
+<div onclick="toggle_visibility('id65', 'x65'); " id="x65">[-]</div><pre id="id65">    {
+      _pContext-&gt;token += _pContext-&gt;currChar;
+      if (!collectChar())
+        return;
+    } while (_pContext-&gt;currChar != '\"' || isEscapted(_pContext-&gt;token));</pre>
+    _pContext-&gt;token += _pContext-&gt;currChar;
+    _pContext-&gt;inCSharpString = false;
+    collectChar();
+  }</pre>
+};</pre>
+//----&lt; class that eats double quoted string &gt;-----------------------
+
+class EatRawCppString : public ConsumeState
+<div onclick="toggle_visibility('id66', 'x66'); " id="x66">[-]</div><pre id="id66">{
+public:
+  EatRawCppString(Context* pContext)
+<div onclick="toggle_visibility('id67', 'x67'); " id="x67">[-]</div><pre id="id67">  {
+    _pContext = pContext;
+  }</pre>
+  virtual void eatChars()
+<div onclick="toggle_visibility('id68', 'x68'); " id="x68">[-]</div><pre id="id68">  {
+    _pContext-&gt;token.clear();
+    do
+<div onclick="toggle_visibility('id69', 'x69'); " id="x69">[-]</div><pre id="id69">    {
+      _pContext-&gt;token += _pContext-&gt;currChar;
+      if (!collectChar())
+        return;
+    } while (_pContext-&gt;currChar != '\"' || _pContext-&gt;prevChar == 'R');</pre>
+    _pContext-&gt;token += _pContext-&gt;currChar;
+    collectChar();
+  }</pre>
+};</pre>
+//----&lt; class that eats double quoted string &gt;-----------------------
+
+class EatRawCSharpString : public ConsumeState
+<div onclick="toggle_visibility('id70', 'x70'); " id="x70">[-]</div><pre id="id70">{
+public:
+  EatRawCSharpString(Context* pContext)
+<div onclick="toggle_visibility('id71', 'x71'); " id="x71">[-]</div><pre id="id71">  {
+    _pContext = pContext;
+  }</pre>
+  virtual void eatChars()
+<div onclick="toggle_visibility('id72', 'x72'); " id="x72">[-]</div><pre id="id72">  {
+    _pContext-&gt;token.clear();
+    do
+<div onclick="toggle_visibility('id73', 'x73'); " id="x73">[-]</div><pre id="id73">    {
+      _pContext-&gt;token += _pContext-&gt;currChar;
+      if (!collectChar())
+        return;
+    } while (_pContext-&gt;currChar != '\"' || _pContext-&gt;prevChar == '@');</pre>
+    _pContext-&gt;token += _pContext-&gt;currChar;
+    collectChar();
+  }</pre>
+};</pre>
+//----&lt; class that eats single quoted string &gt;-----------------------
+
+class EatSQString : public ConsumeState
+<div onclick="toggle_visibility('id74', 'x74'); " id="x74">[-]</div><pre id="id74">{
+public:
+  EatSQString(Context* pContext)
+<div onclick="toggle_visibility('id75', 'x75'); " id="x75">[-]</div><pre id="id75">  {
+    _pContext = pContext;
+  }</pre>
+  virtual void eatChars()
+<div onclick="toggle_visibility('id76', 'x76'); " id="x76">[-]</div><pre id="id76">  {
+    _pContext-&gt;token.clear();
+    do
+<div onclick="toggle_visibility('id77', 'x77'); " id="x77">[-]</div><pre id="id77">    {
+      _pContext-&gt;token += _pContext-&gt;currChar;
+      if (!collectChar())
+        return;
+    } while (_pContext-&gt;currChar != '\'' || isEscapted(_pContext-&gt;token));</pre>
+    _pContext-&gt;token += _pContext-&gt;currChar;
+    collectChar();
+  }</pre>
+};</pre>
+//----&lt; construct shared data storage &gt;------------------------------
+
+Context::Context()
+<div onclick="toggle_visibility('id78', 'x78'); " id="x78">[-]</div><pre id="id78">{
+  _pEatAlphanum = new EatAlphanum(this);
+  _pEatCComment = new EatCComment(this);
+  _pEatCppComment = new EatCppComment(this);
+  _pEatPunctuator = new EatPunctuator(this);
+  _pEatWhitespace = new EatWhitespace(this);
+  _pEatSpecialCharacters = new EatSpecialCharacters(this);
+  _pEatDQString = new EatDQString(this);
+  _pEatRawCppString = new EatRawCppString(this);
+  _pEatRawCSharpString = new EatRawCSharpString(this);
+  _pEatSQString = new EatSQString(this);
+  _pState = _pEatWhitespace;
+  _lineCount = 0;
+  _doReturnComments = false;
+}</pre>
+//----&lt; return shared resources &gt;------------------------------------
+
+Context::~Context()
+<div onclick="toggle_visibility('id79', 'x79'); " id="x79">[-]</div><pre id="id79">{
+  delete _pEatAlphanum;
+  delete _pEatCComment;
+  delete _pEatCppComment;
+  delete _pEatPunctuator;
+  delete _pEatWhitespace;
+  delete _pEatSpecialCharacters;
+  delete _pEatDQString;
+  delete _pEatRawCppString;
+  delete _pEatRawCSharpString;
+  delete _pEatSQString;
+}</pre>
+//----&lt; no longer has anything to do - will be removed &gt;-------------
+
+ConsumeState::ConsumeState() {}
+
+//----&lt; no longer has anything to do - will be removed &gt;-------------
+
+ConsumeState::~ConsumeState() {}
+
+//----&lt; construct toker starting in state EatWhitespace &gt;------------
+
+Toker::Toker()
+<div onclick="toggle_visibility('id80', 'x80'); " id="x80">[-]</div><pre id="id80">{
+  _pContext = new Context();
+  pConsumer = _pContext-&gt;_pEatWhitespace;
+  pConsumer-&gt;setContext(_pContext);
+}</pre>
+
+//----&lt; destructor deletes the current state &gt;-----------------------
+/*
+ * deleting any state deletes them all since derived destructor
+ * implicitly invokes the base destructor
+ */
+Toker::~Toker() 
+<div onclick="toggle_visibility('id81', 'x81'); " id="x81">[-]</div><pre id="id81">{
+  delete _pContext;
+  _pContext = nullptr;
+}</pre>
+
+//----&lt; attach tokenizer to stream &gt;---------------------------------
+/*
+ * stream can be either a std::fstream or std::stringstream
+ */
+bool Toker::attach(std::istream* pIn)
+<div onclick="toggle_visibility('id82', 'x82'); " id="x82">[-]</div><pre id="id82">{
+  if (pIn != nullptr && pIn-&gt;good())
+<div onclick="toggle_visibility('id83', 'x83'); " id="x83">[-]</div><pre id="id83">  {
+    pConsumer-&gt;attach(pIn);
+    //_pContext-&gt;_pIn = pIn;
+    return true;
+  }</pre>
+  return false;
+}</pre>
+//----&lt; collect token generated by ConsumeState &gt;--------------------
+
+std::string Toker::getTok()
+<div onclick="toggle_visibility('id84', 'x84'); " id="x84">[-]</div><pre id="id84">{
+  while(true) 
+<div onclick="toggle_visibility('id85', 'x85'); " id="x85">[-]</div><pre id="id85">  {
+    if (!pConsumer-&gt;canRead())
+      return "";
+    pConsumer-&gt;consumeChars();
+    if (pConsumer-&gt;hasTok())
+      break;
+  }</pre>
+  return pConsumer-&gt;getTok();
+}</pre>
+//----&lt; has toker reached the end of its stream? &gt;-------------------
+
+bool Toker::canRead() { return pConsumer-&gt;canRead(); }
+
+//----&lt; start/stop returning comments as tokens &gt;--------------------
+
+void Toker::returnComments(bool doReturnComments)
+<div onclick="toggle_visibility('id86', 'x86'); " id="x86">[-]</div><pre id="id86">{
+  pConsumer-&gt;returnComments(doReturnComments);
+}</pre>
+//----&lt; is this token a comment? &gt;-----------------------------------
+
+bool Toker::isComment(const std::string& tok)
+<div onclick="toggle_visibility('id87', 'x87'); " id="x87">[-]</div><pre id="id87">{
+  if (tok.find("//") &lt; tok.size() || tok.find("/*") &lt; tok.size())
+    return true;
+  return false;
+}</pre>
+//----&lt; return number of newlines pulled from stream &gt;---------------
+
+size_t Toker::currentLineCount()
+<div onclick="toggle_visibility('id88', 'x88'); " id="x88">[-]</div><pre id="id88">{
+  return pConsumer-&gt;currentLineCount();
+}</pre>
+//----&lt; set one and two char tokens &gt;--------------------------------
+
+void Toker::setSpecialTokens(const std::string& commaSeparatedTokens)
+<div onclick="toggle_visibility('id89', 'x89'); " id="x89">[-]</div><pre id="id89">{
+  pConsumer-&gt;setSpecialTokens(commaSeparatedTokens);
+}</pre>
+//----&lt; debugging output to console if TEST_LOG is #defined &gt;--------
+
+void testLog(const std::string& msg)
+<div onclick="toggle_visibility('id90', 'x90'); " id="x90">[-]</div><pre id="id90">{
+#ifdef TEST_LOG
+  std::cout &lt;&lt; "\n  " &lt;&lt; msg;
+#endif
+}</pre>
+
+//----&lt; test stub &gt;--------------------------------------------------
+
+using Helper = Utilities::StringHelper;
+using namespace Utilities;
+
+#ifdef TEST_TOKENIZER
+
+#include &lt;fstream&gt;
+#include &lt;exception&gt;
+
+
+int main()
+<div onclick="toggle_visibility('id91', 'x91'); " id="x91">[-]</div><pre id="id91">{
+  Helper::Title("Testing Tokenizer");
+
+  //std::string fileSpec = "../Tokenizer/Tokenizer.cpp";
+  //std::string fileSpec = "../Tokenizer/Tokenizer.h";
+  std::string fileSpec = "../Tokenizer/Test.txt";
+  //std::string fileSpec = "../SemiExp/SemiExp.h";
+  try
+<div onclick="toggle_visibility('id92', 'x92'); " id="x92">[-]</div><pre id="id92">  {
+    std::ifstream in(fileSpec);
+    if (!in.good())
+<div onclick="toggle_visibility('id93', 'x93'); " id="x93">[-]</div><pre id="id93">    {
+      std::cout &lt;&lt; "\n  can't open " &lt;&lt; fileSpec &lt;&lt; "\n\n";
+      return 1;
+    }</pre>
+
+<div onclick="toggle_visibility('id94', 'x94'); " id="x94">[-]</div><pre id="id94">    {
+      Toker toker;
+      toker.returnComments();
+      toker.attach(&in);
+      std::cout &lt;&lt; "\n  current line count = " &lt;&lt; toker.currentLineCount();
+      do
+<div onclick="toggle_visibility('id95', 'x95'); " id="x95">[-]</div><pre id="id95">      {
+        std::string tok = toker.getTok();
+        if (tok == "\n")
+          tok = "newline";
+        std::cout &lt;&lt; "\n -- " &lt;&lt; tok;
+      } while (in.good());</pre>
+      std::cout &lt;&lt; "\n  current line count = " &lt;&lt; toker.currentLineCount();
+    }</pre>
+ 
+    putline();
+    Helper::title("Testing change of special characters");
+    std::string newSpecialChars = "., :, +, +=, \n { }";
+
+    Toker toker;
+    toker.returnComments();
+    toker.setSpecialTokens(newSpecialChars);
+    in.clear();
+
+    in.seekg(std::ios::beg);
+    toker.attach(&in);
+    std::cout &lt;&lt; "\n  new special tokens: " &lt;&lt; newSpecialChars;
+    do
+<div onclick="toggle_visibility('id96', 'x96'); " id="x96">[-]</div><pre id="id96">    {
+      std::string tok = toker.getTok();
+      if (tok == "\n")
+        tok = "newline";
+      std::cout &lt;&lt; "\n -- " &lt;&lt; tok;
+    } while (in.good());</pre>
+    std::cout &lt;&lt; "\n  current line count = " &lt;&lt; toker.currentLineCount() &lt;&lt; "\n";
+
+    //Helper::title("Testing re-attach:");
+    //std::string path = "../Tokenizer/Tokenizer.h";
+    //std::ifstream inAgain(path);
+    //if (inAgain.good())
+<div onclick="toggle_visibility('id97', 'x97'); " id="x97">[-]</div><pre id="id97">    //{
+    //  toker.attach(&inAgain);
+    //  do
+<div onclick="toggle_visibility('id98', 'x98'); " id="x98">[-]</div><pre id="id98">    //  {
+    //    std::string tok = toker.getTok();
+    //    if (tok == "\n")
+    //      tok = "newline";
+    //    std::cout &lt;&lt; "\n -- " &lt;&lt; tok;
+    //  } while (inAgain.good());</pre>
+    //  std::cout &lt;&lt; "\n  current line count = " &lt;&lt; toker.currentLineCount();
+    //}</pre>
+    //else
+<div onclick="toggle_visibility('id99', 'x99'); " id="x99">[-]</div><pre id="id99">    //{
+    //  std::cout &lt;&lt; "\n  can't attach to " &lt;&lt; path &lt;&lt; "\n";
+    //}</pre>
+  }</pre>
+  catch (std::logic_error& ex)
+<div onclick="toggle_visibility('id100', 'x100'); " id="x100">[-]</div><pre id="id100">  {
+    std::cout &lt;&lt; "\n  " &lt;&lt; ex.what();
+  }</pre>
+  std::cout &lt;&lt; "\n\n";
+  return 0;
+}</pre>
+#endif
+    </pre>
+    <hr />
+  </body>
+</html>
